@@ -18,12 +18,13 @@ from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ObjectDoesNotExist
 
 
-class UserSerializer(CountryFieldMixin, serializers.ModelSerializer):
+class UserSerializer(CountryFieldMixin,
+                     serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "username",
-                  "full_name", "email",
-                  "phone", "timestamp")
+        fields = ("id", "username", "full_name",
+                  "email", "phone",
+                  "timestamp")
         read_only_field = ("id", "email", "timestamp")
 
 
@@ -31,9 +32,9 @@ class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         refresh = self.get_token(self.user)
-        data["user"] = UserSerializer(self.user).data
-        data["refresh"] = str(refresh)
-        data["access"] = str(refresh.access_token)
+        data['user'] = UserSerializer(self.user).data
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, self.user)
@@ -42,8 +43,11 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
-        max_length=128, min_length=4, write_only=True
+        max_length=128, min_length=4, write_only=True,
         required=True
+    )
+    password_confirmation = serializers.CharField(
+        min_length=6, max_length=68, write_only=True, required=True
     )
     email = serializers.EmailField(
         required=True, max_length=128
@@ -52,8 +56,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "username", "email", "phone", "role"
-            "full_name", "password"
+            "username", "email", "phone", "full_name",
+            "role", "password", "password_confirmation"
         ]
 
     def create(self, validated_data):
@@ -64,9 +68,43 @@ class RegisterSerializer(serializers.ModelSerializer):
                 username=validated_data["username"],
                 email=validated_data["email"],
                 phone=validated_data["phone"],
-                is_active=False
+                is_active=False,
                 role=validated_data['role']
             )
-            user.set_password(validated_data["password"])
-            user.save()
+            if (validated_data['password'] and validated_data['password_confirmation']
+                    and validated_data['password'] == validated_data['password_confirmation']):
+                user.set_password(validated_data["password"])
+                user.save()
+            else:
+                raise serializers.ValidationError(
+                    "Password and password confirmation do not match"
+                )
         return user
+
+
+class ResetPasswordEmailRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        max_length=155, min_length=2
+    )
+
+    class Meta:
+        fields = ['email']
+
+    def validate(self, attrs):
+        return attrs
+
+
+class SetNewPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        min_length=6, max_length=68, write_only=True, required=True
+    )
+    password_confirmation = serializers.CharField(
+        min_length=6, max_length=68, write_only=True, required=True
+    )
+    token = serializers.CharField(min_length=1, write_only=True, required=True)
+    uidb64 = serializers.CharField(
+        min_length=1, write_only=True
+    )
+
+    class Meta:
+        fields = ('password', 'password_confirmation', 'token', 'uidb64')
