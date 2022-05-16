@@ -4,7 +4,12 @@ from django.urls import path
 from rest_framework_simplejwt.views import (TokenRefreshView)
 
 from accounts.views import (
-    LoginViewSet, PasswordResetTokenCheck, PatientRegistrationViewSet, RefreshViewSet, RegistrationViewSet, RequestPasswordResetEmail, SetNewPasswordAPIView, VerifyEmail
+    AdministratorProfileAPIView, DoctorProfileAPIViewSet,
+    LabtechProfileAPIView, LoginViewSet, NurseProfileAPIView,
+    PasswordResetTokenCheck, PatientProfileAPIView, PatientRegistrationViewSet,
+    PharmacistProfileAPIView, ReceptionistProfileAPIView, RefreshViewSet,
+    RegistrationViewSet, RequestPasswordResetEmail, SetNewPasswordAPIView,
+    VerifyEmail
 )
 app_name = "api"
 routes = SimpleRouter()
@@ -17,7 +22,20 @@ routes.register('password-reset-complete', SetNewPasswordAPIView,
                 basename="password-reset-complete")
 routes.register('patient/register', PatientRegistrationViewSet,
                 basename="patient-register")
-
+routes.register('admin/profile', AdministratorProfileAPIView,
+                basename="admin-profile")
+routes.register('pharmacist/profile', PharmacistProfileAPIView,
+                basename="pharmacist-profile")
+routes.register('nurse/profile', NurseProfileAPIView,
+                basename="nurse-profile")
+routes.register('doctor/profile', DoctorProfileAPIViewSet,
+                basename="doctor-profile")
+routes.register('labtech/profile', LabtechProfileAPIView,
+                basename="labtech-profile")
+routes.register('receptionist/profile', ReceptionistProfileAPIView,
+                basename="receptionist-profile")
+routes.register('patient/profile', PatientProfileAPIView,
+                basename="patient-profile")
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,

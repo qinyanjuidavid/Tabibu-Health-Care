@@ -142,7 +142,7 @@ class Profile(models.Model):
         _('estate'), max_length=57, blank=True, null=True
     )
     gender = models.CharField(_('gender'), choices=gender_choices,
-                              max_length=20, default="Single"
+                              max_length=20, default="Male"
                               )
     marital_status = models.CharField(
         _('marital status'), choices=marital_status_choices, max_length=20, default="Single")

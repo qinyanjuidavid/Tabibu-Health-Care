@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # Local Apps
     'accounts.apps.AccountsConfig',
+    'appointments.apps.AppointmentsConfig',
 ]
 PHONENUMBER_DB_FORMAT = "NATIONAL"
 PHONENUMBER_DEFAULT_REGION = "KE"
