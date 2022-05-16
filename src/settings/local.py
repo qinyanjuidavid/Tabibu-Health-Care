@@ -30,11 +30,12 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     # Local Apps
+    'accounts.apps.AccountsConfig',
 ]
 PHONENUMBER_DB_FORMAT = "NATIONAL"
 PHONENUMBER_DEFAULT_REGION = "KE"
 
-# AUTH_USER_MODEL = 'Accounts.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 
 REST_FRAMEWORK = {
