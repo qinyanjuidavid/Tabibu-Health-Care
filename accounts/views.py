@@ -1,4 +1,4 @@
-from accounts.send_mails import send_activation_mail, send_password_reset_email
+from accounts.send_mails import send_activation_mail, send_password_reset_email, send_random_password_mail
 import jwt
 from django.contrib import messages
 from django.conf import settings
@@ -27,7 +27,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User)
 from accounts.serializers import (
-    LoginSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
+    LoginSerializer, PatientRegisterSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
 )
 
 
@@ -68,7 +68,36 @@ class RegistrationViewSet(ModelViewSet, TokenObtainPairView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(f"Password--->  {serializer.validated_data['password']}")
+        user = serializer.save(is_active=False)
+        password = User.objects.make_random_password()
+        user.set_password(password)
+        user.save()
+        user_data = serializer.data
+        user_data['password'] = password
+        send_activation_mail(user_data, request)
+        send_random_password_mail(user_data, user_data['password'], request)
+        refresh = RefreshToken.for_user(user)
+        res = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
+        return Response({
+            'user': serializer.data,
+            'refresh': res['refresh'],
+            'token': res['access']
+        },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class PatientRegistrationViewSet(ModelViewSet, TokenObtainPairView):
+    serializer_class = PatientRegisterSerializer
+    permission_classes = [AllowAny, ]
+    http_method_names = ["post"]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         if (serializer.validated_data["password"] and serializer.validated_data["password_confirmation"]
                 and serializer.validated_data["password"] == serializer.validated_data["password_confirmation"]):
             user = serializer.save(is_active=False)

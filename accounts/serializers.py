@@ -42,6 +42,34 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True, max_length=128
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "username", "email", "phone", "full_name",
+            "role",
+        ]
+
+    def create(self, validated_data):
+        try:
+            user = User.objects.get(email=validated_data["email"])
+        except ObjectDoesNotExist:
+            user = User.objects.create(
+                username=validated_data["username"],
+                email=validated_data["email"],
+                phone=validated_data["phone"],
+                is_active=False,
+                full_name=validated_data["full_name"],
+                role=validated_data['role']
+            )
+            user.save()
+        return user
+
+
+class PatientRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         max_length=128, min_length=4, write_only=True,
         required=True
@@ -57,7 +85,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "username", "email", "phone", "full_name",
-            "role", "password", "password_confirmation"
+            "password", "password_confirmation"
         ]
 
     def create(self, validated_data):
@@ -69,7 +97,8 @@ class RegisterSerializer(serializers.ModelSerializer):
                 email=validated_data["email"],
                 phone=validated_data["phone"],
                 is_active=False,
-                role=validated_data['role']
+                full_name=validated_data["full_name"],
+                role="Patient"
             )
             if (validated_data['password'] and validated_data['password_confirmation']
                     and validated_data['password'] == validated_data['password_confirmation']):

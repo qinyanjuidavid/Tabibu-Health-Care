@@ -4,7 +4,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import (TokenRefreshView)
 
 from accounts.views import (
-    LoginViewSet, PasswordResetTokenCheck, RefreshViewSet, RegistrationViewSet, RequestPasswordResetEmail, SetNewPasswordAPIView, VerifyEmail
+    LoginViewSet, PasswordResetTokenCheck, PatientRegistrationViewSet, RefreshViewSet, RegistrationViewSet, RequestPasswordResetEmail, SetNewPasswordAPIView, VerifyEmail
 )
 app_name = "api"
 routes = SimpleRouter()
@@ -15,6 +15,8 @@ routes.register('password-reset', RequestPasswordResetEmail,
                 basename="requestPasswordReset")
 routes.register('password-reset-complete', SetNewPasswordAPIView,
                 basename="password-reset-complete")
+routes.register('patient/register', PatientRegistrationViewSet,
+                basename="patient-register")
 
 urlpatterns = [
     *routes.urls,
