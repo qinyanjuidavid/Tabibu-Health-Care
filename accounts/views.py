@@ -167,10 +167,17 @@ class RequestPasswordResetEmail(ModelViewSet):
             if user.is_active:
                 send_password_reset_email(user, request)
             return Response(
-                {"Success": "We have emailed you a link to reset your password"},
+                {"Success": """If there’s an account associated with this email address,
+                 we’ll send you an email with reset instructions. If you don’t get an email,
+                contact the Support team.
+                 """
+                 },
                 status=status.HTTP_200_OK
             )
-        return Response({"Success": "Password Reset Link was sent to your email."})
+        return Response({"Success": """If there’s an account associated with this email address,
+                 we’ll send you an email with reset instructions. If you don’t get an email,
+                contact the Support team.
+                 """})
 
 
 def PasswordResetTokenCheck(request, uidb64, token):

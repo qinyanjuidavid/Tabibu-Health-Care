@@ -1,4 +1,6 @@
 import datetime
+from datetime import datetime as dt
+
 
 from accounts.models import (Departments, Doctor, Patient, Receptionist,
                              TrackingModel)
@@ -10,23 +12,24 @@ from django.utils.translation import gettext as _
 
 class Appointments(TrackingModel):
     status_choices = (
-        ("Admitted", "Admitted"),
         ("Cancelled", "Cancelled"),
-        ("Discharged", "Discharged"),
+        ("Completed", "Completed"),
         ("Pending", "Pending"),
-        ("In Progress", "In Progress"),
-        ("Treated", "Treated")
     )
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    appointment_fee = models.PositiveIntegerField(
-        _("appointment fee"), default=100
-    )
-    department = models.ForeignKey(Departments, blank=True, null=True,
+    department = models.ForeignKey(Departments,
                                    on_delete=models.DO_NOTHING
                                    )
+    appointment_fee = models.FloatField(
+        _("appointment fee"), default=0.00
+    )
     appointment_date = models.DateField(
         _("appointment date"), default=datetime.date.today
     )
+    appointment_time = models.TimeField(
+        _("appointment time"), default=dt.now().time()
+    )
+
     receptionist = models.ForeignKey(
         Receptionist, blank=True, null=True,
         on_delete=models.DO_NOTHING)
@@ -43,10 +46,14 @@ class Appointments(TrackingModel):
         default="Pending"
     )
     paid = models.BooleanField(_("paid"), default=False)
+    completed = models.BooleanField(_("completed"), default=False)
+    your_message = models.TextField(
+        _("your message"), help_text="Please, describe your problem.",
+        blank=True, null=True)
 
     def __str__(self):
         return f"{self.id}. {self.patient.user.username} {self.appointment_date}"
 
     class Meta:
         verbose_name_plural = "Appointments"
-        ordering = ("-id",)
+        ordering = ("-appointment_date", "-appointment_time")

@@ -11,6 +11,8 @@ from accounts.views import (
     RegistrationViewSet, RequestPasswordResetEmail, SetNewPasswordAPIView,
     VerifyEmail
 )
+
+from appointments.views import PatientAppointmentsApiView
 app_name = "api"
 routes = SimpleRouter()
 routes.register('login', LoginViewSet, basename='login')
@@ -36,6 +38,9 @@ routes.register('receptionist/profile', ReceptionistProfileAPIView,
                 basename="receptionist-profile")
 routes.register('patient/profile', PatientProfileAPIView,
                 basename="patient-profile")
+# Appointment Routes
+routes.register('appointment', PatientAppointmentsApiView,
+                basename='appointment')
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,
