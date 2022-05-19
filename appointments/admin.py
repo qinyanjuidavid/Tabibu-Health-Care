@@ -6,7 +6,8 @@ from appointments.models import Appointments
 @admin.register(Appointments)
 class appointmentAdmin(admin.ModelAdmin):
     list_display = ("get_patient_username", "department", "appointment_fee",
-                    "doctor", "paid", "status", "expired", "receptionist"
+                    "doctor", "status", "appointment_date", "appointment_time",
+                    "paid", "expired"
                     )
 
     list_filter = ("paid", "status", "department", "expired")
