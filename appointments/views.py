@@ -3,7 +3,8 @@ from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
 from django.shortcuts import render, get_object_or_404
-from appointments.models import Appointments
+from appointments.models import Appointments, Lab_test
+from records.serializers import TestSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -61,7 +62,7 @@ class PatientAppointmentsApiView(ModelViewSet):
                     )
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
-                return Response({"message": "Appointment date is invalid"},
+                return Response({"message": "Appointment can't be scheduled on a past date."},
                                 status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
@@ -85,11 +86,20 @@ class PatientAppointmentsApiView(ModelViewSet):
         appointment_time = serializer.validated_data["appointment_time"]
         message = serializer.validated_data["your_message"]
         if appointment_date >= datetime.now().date():
-            queryset.appointment_date = appointment_date
-            queryset.appointment_time = appointment_time
-            queryset.your_message = message
-            queryset.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if (queryset.status == "Completed" or
+                queryset.completed == True or
+                    queryset.appointment_date < datetime.now().date() or
+                    queryset.expired == True):
+                return Response(
+                    {"message": "Appointment already completed or expired."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                queryset.appointment_date = appointment_date
+                queryset.appointment_time = appointment_time
+                queryset.your_message = message
+                queryset.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(
                 {"message": "Appointment can't be rescheduled to a past date."},
@@ -99,14 +109,15 @@ class PatientAppointmentsApiView(ModelViewSet):
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
-        if (queryset.paid == True & queryset.completed == True
-                & queryset.status == "Completed"):
-            queryset.status = "Cancelled"
-        else:
+        if (queryset.status == "Completed" or queryset.paid == True
+                or queryset.completed == True
+            ):
             return Response(
-                {"message": "Failed to cancel appointment."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"message": "Can not cancel a paid or completed appointment."},
             )
+        else:
+            queryset.status = "Cancelled"
+            queryset.save()
         return Response(
             {"message": "Appointment was Successfully cancelled."},
             status=status.HTTP_204_NO_CONTENT
@@ -121,11 +132,11 @@ class DoctorAppointmentApiView(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         doctorObj = Doctor.objects.get(user=user)
-        print(doctorObj)
-        #######
         appointmentQuery = Appointments.objects.filter(
-            Q(paid=True) & Q(expired=False)
-            # Q(status="Pending")  Q(status="Completed")
+            Q(paid=True) & Q(expired=False) &
+            Q(department=doctorObj.department) &
+            Q(status="Pending") or Q(status="Completed")
+
         )
         return appointmentQuery
 
@@ -167,19 +178,25 @@ class ReceptionistApointmentApiView(ModelViewSet):
         serializer = self.get_serializer(instance, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         departmentObj = serializer.validated_data["department"]
         appointment_date = serializer.validated_data["appointment_date"]
         appointment_time = serializer.validated_data["appointment_time"]
-        patient = serializer.validated_data["patient"]
+        patientQs = serializer.validated_data["patient"]
         paid = serializer.validated_data["paid"]
         receptionistQuery = Receptionist.objects.get(user=request.user)
         if departmentObj.avail == True:
             if appointment_date >= datetime.now().date():
                 appointmentExists = Appointments.objects.filter(
-                    Q(patient=patient) &
+                    Q(patient=patientQs) &
                     Q(appointment_date=appointment_date) &
                     Q(department=departmentObj)
                 )
@@ -193,7 +210,7 @@ class ReceptionistApointmentApiView(ModelViewSet):
                         department=departmentObj,
                         appointment_date=appointment_date,
                         appointment_time=appointment_time,
-                        patient=patient,
+                        patient=patientQs,
                         receptionist=receptionistQuery,
                         paid=paid)
                     return Response(
@@ -220,11 +237,20 @@ class ReceptionistApointmentApiView(ModelViewSet):
         appointment_time = serializer.validated_data["appointment_time"]
         department = serializer.validated_data["department"]
         if appointment_date >= datetime.now().date():
-            queryset.appointment_date = appointment_date
-            queryset.appointment_time = appointment_time
-            queryset.department = department
-            queryset.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if (queryset.completed == True or queryset.status == "Complete"
+                    or queryset.expired == True):
+                return Response(
+                    {"message": "Can not update a completed appointment."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                queryset.receptionist = Receptionist.objects.get(
+                    user=request.user)
+                queryset.appointment_date = appointment_date
+                queryset.appointment_time = appointment_time
+                queryset.department = department
+                queryset.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(
                 {"message": "Appointment can't be rescheduled to a past date."},
@@ -234,12 +260,12 @@ class ReceptionistApointmentApiView(ModelViewSet):
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
-        if (queryset.paid == True & queryset.completed == True
-                & queryset.status == "Completed"):
+        if (queryset.paid == True or queryset.completed == True
+                or queryset.status == "Completed"):
             queryset.status = "Cancelled"
         else:
             return Response(
-                {"message": "Failed to cancel the appointment."}
+                {"message": "Can not cancel a paid or completed appointment."}
             )
         return Response(
             {"message": "Appointment was Successfully cancelled."},
@@ -248,4 +274,27 @@ class ReceptionistApointmentApiView(ModelViewSet):
 
 
 class DoctorTestAPIView(ModelViewSet):
-    pass
+    serializer_class = TestSerializer
+    permission_classes = [IsAuthenticated, IsDoctor]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        labTestQuery = Lab_test.objects.filter(
+            available=True
+        )
+        return labTestQuery
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # @action(detail=True,)
+    def test_recommendation(self, request, pk=None, *args, **kwargs):
+        pass

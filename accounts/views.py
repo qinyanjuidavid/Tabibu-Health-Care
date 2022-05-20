@@ -140,7 +140,7 @@ def VerifyEmail(request):
         else:
             messages.info(request,
                           """Your Account has already been activated.
-                          You can now login and 
+                          You can now login and
                           place your order today.
                         """)
     except jwt.ExpiredSignatureError as identifier:
@@ -167,17 +167,12 @@ class RequestPasswordResetEmail(ModelViewSet):
             if user.is_active:
                 send_password_reset_email(user, request)
             return Response(
-                {"Success": """If there’s an account associated with this email address,
-                 we’ll send you an email with reset instructions. If you don’t get an email,
-                contact the Support team.
-                 """
+                {"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."
+
                  },
                 status=status.HTTP_200_OK
             )
-        return Response({"Success": """If there’s an account associated with this email address,
-                 we’ll send you an email with reset instructions. If you don’t get an email,
-                contact the Support team.
-                 """})
+        return Response({"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."})
 
 
 def PasswordResetTokenCheck(request, uidb64, token):

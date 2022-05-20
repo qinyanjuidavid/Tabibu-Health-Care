@@ -5,7 +5,7 @@ from appointments.models import Appointments
 
 class patientAppointmentSerializer(serializers.ModelSerializer):
     # department = DepartmentsSerializer(read_only=True)
-    patient = PatientProfileSerializer(read_only=True)
+    # patient = PatientProfileSerializer(read_only=True)
     doctor = DoctorProfileSerializer(read_only=True)
     receptionist = ReceptionistProfileSerializer(read_only=True)
 
