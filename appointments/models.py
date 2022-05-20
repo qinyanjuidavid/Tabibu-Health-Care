@@ -191,4 +191,4 @@ class Medication_Bag(TrackingModel):
         return total
 
     class Meta:
-        verbose_name_plural = "Prescriptions"
+        verbose_name_plural = "Medication Bag"

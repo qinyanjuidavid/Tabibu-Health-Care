@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # Local Apps
     'accounts.apps.AccountsConfig',
     'appointments.apps.AppointmentsConfig',
+    'records.apps.RecordsConfig',
 ]
 PHONENUMBER_DB_FORMAT = "NATIONAL"
 PHONENUMBER_DEFAULT_REGION = "KE"
