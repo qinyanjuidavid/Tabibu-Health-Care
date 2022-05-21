@@ -604,7 +604,6 @@ class AppointmentsAPIView(ModelViewSet):
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
-
         queryset.status = "Cancelled"
         queryset.save()
         return Response(
