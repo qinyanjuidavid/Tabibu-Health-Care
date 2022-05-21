@@ -1,4 +1,6 @@
-from accounts.send_mails import send_activation_mail, send_password_reset_email
+from accounts.permissions import (
+    IsAdministrator, IsDoctor, IsLabtech, IsNurse, IsPatient, IsPharmacist, IsReceptionist)
+from accounts.send_mails import send_activation_mail, send_password_reset_email, send_random_password_mail
 import jwt
 from django.contrib import messages
 from django.conf import settings
@@ -27,7 +29,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User)
 from accounts.serializers import (
-    LoginSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
+    AdministratorProfileSerializer, DoctorProfileSerializer, LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer, PatientProfileSerializer, PatientRegisterSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
 )
 
 
@@ -68,7 +70,36 @@ class RegistrationViewSet(ModelViewSet, TokenObtainPairView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(f"Password--->  {serializer.validated_data['password']}")
+        user = serializer.save(is_active=False)
+        password = User.objects.make_random_password()
+        user.set_password(password)
+        user.save()
+        user_data = serializer.data
+        user_data['password'] = password
+        send_activation_mail(user_data, request)
+        send_random_password_mail(user_data, user_data['password'], request)
+        refresh = RefreshToken.for_user(user)
+        res = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
+        return Response({
+            'user': serializer.data,
+            'refresh': res['refresh'],
+            'token': res['access']
+        },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class PatientRegistrationViewSet(ModelViewSet, TokenObtainPairView):
+    serializer_class = PatientRegisterSerializer
+    permission_classes = [AllowAny, ]
+    http_method_names = ["post"]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         if (serializer.validated_data["password"] and serializer.validated_data["password_confirmation"]
                 and serializer.validated_data["password"] == serializer.validated_data["password_confirmation"]):
             user = serializer.save(is_active=False)
@@ -109,7 +140,7 @@ def VerifyEmail(request):
         else:
             messages.info(request,
                           """Your Account has already been activated.
-                          You can now login and 
+                          You can now login and
                           place your order today.
                         """)
     except jwt.ExpiredSignatureError as identifier:
@@ -136,10 +167,12 @@ class RequestPasswordResetEmail(ModelViewSet):
             if user.is_active:
                 send_password_reset_email(user, request)
             return Response(
-                {"Success": "We have emailed you a link to reset your password"},
+                {"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."
+
+                 },
                 status=status.HTTP_200_OK
             )
-        return Response({"Success": "Password Reset Link was sent to your email."})
+        return Response({"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."})
 
 
 def PasswordResetTokenCheck(request, uidb64, token):
@@ -199,3 +232,225 @@ class SetNewPasswordAPIView(ModelViewSet):
             raise AuthenticationFailed(
                 "The Reset Link is Invalid!", 401)
         return Response(serializer.data)
+
+
+class AdministratorProfileAPIView(ModelViewSet):
+    serializer_class = AdministratorProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdministrator]
+    http_method_names = ('put', 'get',)
+
+    def get_queryset(self):
+        user = self.request.user
+        adminQuery = Administrator.objects.filter(
+            Q(user=user)
+        )
+        return adminQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class PharmacistProfileAPIView(ModelViewSet):
+    serializer_class = PharmacistProfileSerializer
+    permission_classes = [IsAuthenticated, IsPharmacist]
+    http_method_names = ("put", "get")
+
+    def get_queryset(self):
+        user = self.request.user
+        pharmacistQuery = Pharmacist.objects.filter(
+            Q(user=user)
+        )
+        return pharmacistQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class NurseProfileAPIView(ModelViewSet):
+    serializer_class = NurseProfileSerializer
+    permission_classes = [IsAuthenticated, IsNurse]
+    http_method_names = ("put", "get")
+
+    def get_queryset(self):
+        user = self.request.user
+        nurseQuery = Nurse.objects.filter(
+            Q(user=user)
+        )
+        return nurseQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data['user']
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class DoctorProfileAPIViewSet(ModelViewSet):
+    serializer_class = DoctorProfileSerializer
+    permission_classes = [IsAuthenticated, IsDoctor]
+    http_method_names = ("put", "get")
+
+    def get_queryset(self):
+        user = self.request.user
+        doctorQuery = Doctor.objects.filter(
+            Q(user=user)
+        )
+        return doctorQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data['user']
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class LabtechProfileAPIView(ModelViewSet):
+    serializer_class = LabtechProfileSerializer
+    permission_classes = [IsAuthenticated, IsLabtech]
+    http_method_names = ("put", "get")
+
+    def get_queryset(self):
+        user = self.request.user
+        labtechQuery = Labtech.objects.filter(
+            Q(user=user)
+        )
+        return labtechQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class ReceptionistProfileAPIView(ModelViewSet):
+    serializer_class = ReceptionistProfileSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist]
+    http_method_names = ("put", "get")
+
+    def get_queryset(self):
+        user = self.request.user
+        receptionistQuery = Receptionist.objects.filter(
+            Q(user=user)
+        )
+        return receptionistQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class PatientProfileAPIView(ModelViewSet):
+    serializer_class = PatientProfileSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ("put", "get")
+
+    def get_questset(self):
+        user = self.request.user
+        patientQuery = Patient.objects.filter(
+            Q(user=user)
+        )
+        return patientQuery
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

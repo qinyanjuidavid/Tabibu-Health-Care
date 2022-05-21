@@ -1,0 +1,50 @@
+from rest_framework import serializers
+from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, PatientProfileSerializer, ReceptionistProfileSerializer
+from appointments.models import Appointments, Test, Tests
+from records.serializers import TestSerializer
+
+
+class patientAppointmentSerializer(serializers.ModelSerializer):
+    # department = DepartmentsSerializer(read_only=True)
+    # patient = PatientProfileSerializer(read_only=True)
+    doctor = DoctorProfileSerializer(read_only=True)
+    receptionist = ReceptionistProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Appointments
+        fields = ("id", "patient", "department", "appointment_fee",
+                  "appointment_date", "appointment_time", "receptionist",
+                  "doctor", "notes", "findings", "expired", "status", "paid",
+                  "completed", "your_message"
+                  )
+        read_only_fields = ("id", "appointment_fee",)
+
+
+class testSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    test = TestSerializer(read_only=True)
+    labTech = LabtechProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Test
+        fields = (
+            "id", "test", "price",
+            "tested", "date_tested", "paid",
+            "lab_tech", "results", "appointment"
+        )
+        read_only_fields = ("id", "price",)
+
+
+class testsSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    test = TestSerializer(read_only=True)
+    labTech = LabtechProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Tests
+        fields = (
+            "id", "test", "appointment",
+            "tested", "date_tested",
+            "paid"
+        )
+        read_only_fields = ("id",)

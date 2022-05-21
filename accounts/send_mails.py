@@ -42,22 +42,20 @@ def send_random_password_mail(user, password, request):
     to_mail = user["email"]
     current_site = get_current_site(request).domain
     mail_subject = "Account Random Password"
-    password_reset_url = reverse('api:password-reset')
-    reseturl = f"http://{current_site}/{password_reset_url}"
 
     message = f"""
-Dear {user["username"]},
+Hello {user["username"]},
 
-Your registration to Tabibu Hospital was successful,
-the password to your account is  {password}
+Your registration to Tabibu Health Care was successful, Credentials
+are as follows:
+Email: {user["email"]}
+Password: {password}
 
-Kindly, activate your account and reset your password using the link below;
-{reseturl}
-
+Kindly, activate your account and reset your password.
 If you have no prior idea of what is going on, Please disregard this email.
 
 Thank you!
-The Tabibu Team.
+The Tabibu Health Care Team.
     """
     email = EmailMessage(
         subject=mail_subject,
@@ -81,7 +79,7 @@ def send_password_reset_email(user_data, request):
     message = f"""
 Hello {user_data.username},
 
-You recently requested a password reset for your Freemob Account,
+You recently requested a password reset for your Tabibu Health Care Account,
 click the link below to reset it:
 {absurl}
 
