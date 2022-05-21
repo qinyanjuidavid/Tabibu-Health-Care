@@ -136,7 +136,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
     bio = models.TextField(_('bio'), blank=True, null=True)
     profile_picture = models.ImageField(
-        upload_to='profile_pics', blank=True, null=True)
+        upload_to='profile_pics', default="default.png")
     id_no = models.CharField(
         _('National ID'), max_length=58, blank=True, null=True
     )

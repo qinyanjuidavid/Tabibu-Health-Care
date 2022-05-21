@@ -11,7 +11,7 @@ from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsReceptionist)
 from appointments.models import Lab_test, Medicine, Test
 from records.serializers import MedicineSerializer, TestSerializer
-from accounts.serializers import DepartmentsSerializer, UserSerializer
+from accounts.serializers import AdministratorProfileSerializer, DepartmentsSerializer, UserSerializer
 
 
 class TestAPIView(ModelViewSet):
@@ -26,6 +26,12 @@ class TestAPIView(ModelViewSet):
     def list(self, request, *args, **kwargs):
         instance = self.get_queryset()
         serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
@@ -68,6 +74,12 @@ class MedicineAPIView(ModelViewSet):
         serializer = self.get_serializer(instance, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -106,6 +118,12 @@ class DepartmentAPIView(ModelViewSet):
     def list(self, request, *args, **kwargs):
         instance = self.get_queryset()
         serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
@@ -148,6 +166,12 @@ class UserAPIView(ModelViewSet):
         serializer = self.get_serializer(instance, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def update(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
@@ -165,3 +189,48 @@ class UserAPIView(ModelViewSet):
             {"message": "The user's account was successfully deactivated."},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class AdministratorAPIView(ModelViewSet):
+    serializer_class = AdministratorProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdministrator]
+    http_method_names = ["get", "put", "delete"]
+
+    def get_queryset(self):
+        testObj = Administrator.objects.all()
+        return testObj
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        userQuery = User.objects.get(id=queryset.user.id)
+        userSerializer = UserSerializer(
+            userQuery, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        userObj = User.objects.get(id=queryset.user.id)
+        userObj.is_active = False
+        userObj.save()
+        return Response(
+            {"message": "Account was successfully deactivated."},
+            status=status.HTTP_204_NO_CONTENT)

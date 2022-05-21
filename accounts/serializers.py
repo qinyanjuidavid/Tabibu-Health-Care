@@ -158,7 +158,8 @@ class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSeriali
         fields = ("id", "user", "bio", "id_no", "nationality",
                   "town", "estate", "gender", "department",
                   "marital_status", "date_of_birth", "job_id",
-                  "available"
+                  "available",
+                  #   "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
