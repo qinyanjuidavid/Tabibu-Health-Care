@@ -1,4 +1,4 @@
-from records.views import AdministratorAPIView, DepartmentAPIView, MedicineAPIView, TestAPIView, UserAPIView
+from records.views import AdministratorAPIView, DepartmentAPIView, MedicineAPIView, PharmacistAPIView, TestAPIView, UserAPIView
 from rest_framework.routers import SimpleRouter
 from django.views.generic import TemplateView
 from django.urls import path
@@ -46,6 +46,11 @@ routes.register("doctor-appointments", DoctorAppointmentApiView,
                 basename="doctorsAppointment")
 routes.register('receptionist-appointments', ReceptionistApointmentApiView,
                 basename="receptionistAppointment")
+
+
+# Records Routes
+routes.register("tests", TestAPIView, basename="tests")
+routes.register("medicine", MedicineAPIView, basename="medicine")
 routes.register("doctor-tests", DoctorTestAPIView,
                 basename="doctorTests")
 routes.register('departments', DepartmentAPIView,
@@ -54,10 +59,8 @@ routes.register('users', UserAPIView,
                 basename="users")
 routes.register("admins", AdministratorAPIView,
                 basename="administrators")
-
-# Records Routes
-routes.register("tests", TestAPIView, basename="tests")
-routes.register("medicine", MedicineAPIView, basename="medicine")
+routes.register("pharmacists", PharmacistAPIView,
+                basename="pharmacists")
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,

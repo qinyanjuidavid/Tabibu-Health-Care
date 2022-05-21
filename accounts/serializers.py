@@ -159,7 +159,7 @@ class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSeriali
                   "town", "estate", "gender", "department",
                   "marital_status", "date_of_birth", "job_id",
                   "available",
-                  #   "profile_picture"
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
@@ -171,8 +171,10 @@ class PharmacistProfileSerializer(CountryFieldMixin, serializers.ModelSerializer
     class Meta:
         model = Pharmacist
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status", "date_of_birth",
-                  "job_id", "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  #   "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
