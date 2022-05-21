@@ -18,6 +18,8 @@ from appointments.models import Appointments, Lab_test, Medicine, Test
 from appointments.serializers import patientAppointmentSerializer
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
+from billing.models import Invoice, Payment
+from billing.serializers import InvoiceSerializer, PaymentSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -610,3 +612,45 @@ class AppointmentsAPIView(ModelViewSet):
             {"message", "Appointment was successfully Cancelled."},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class PaymentAPIView(ModelViewSet):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated, IsAdministrator]
+    http_method_names = ["get", "post", "put", "delete"]
+
+    def get_queryset(self):
+        paymentObj = Payment.objects.all()
+        return paymentObj
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class InvoiceAPIView(ModelViewSet):
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated, IsAdministrator]
+    http_method_names = ["get", "post", "put", "delete"]
+
+    def get_queryset(self):
+        invoiceObj = Invoice.objects.all()
+        return invoiceObj
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
