@@ -102,7 +102,7 @@ class Invoice(TrackingModel):
         ("Pending", "Pending")
     )
     payment = models.ManyToManyField(
-        Payment, relateed_name="payments"
+        Payment, related_name="payments"
     )
     invoiced_date = models.DateTimeField(_("invoiced date"), null=True)
     total_amount = models.FloatField(_("total amount"), default=0.00)

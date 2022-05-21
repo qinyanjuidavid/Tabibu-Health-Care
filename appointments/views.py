@@ -1,9 +1,11 @@
 from datetime import datetime
+
+from accounts.models import Departments, Doctor, Patient, Receptionist
 from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
-from django.shortcuts import render, get_object_or_404
-from appointments.models import Appointments, Lab_test
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
 from records.serializers import TestSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -11,9 +13,8 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from appointments.models import Appointments, Lab_test
 from appointments.serializers import patientAppointmentSerializer
-from accounts.models import (Patient, Doctor, Departments, Receptionist)
-from django.db.models import Q
 
 
 class PatientAppointmentsApiView(ModelViewSet):

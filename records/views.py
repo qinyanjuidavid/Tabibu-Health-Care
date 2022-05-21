@@ -1,18 +1,30 @@
-from django.shortcuts import render, get_object_or_404
-from accounts.models import Administrator, Departments, Doctor, Labtech, Nurse, Patient, Pharmacist, Receptionist, User
+from datetime import datetime
+
+from accounts.models import (Administrator, Departments, Doctor, Labtech,
+                             Nurse, Patient, Pharmacist, Receptionist, User)
+from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
+                                  IsNurse, IsPatient, IsPharmacist,
+                                  IsReceptionist)
+from accounts.serializers import (AdministratorProfileSerializer,
+                                  DepartmentsSerializer,
+                                  DoctorProfileSerializer,
+                                  LabtechProfileSerializer,
+                                  NurseProfileSerializer,
+                                  PatientProfileSerializer,
+                                  PharmacistProfileSerializer,
+                                  ReceptionistProfileSerializer,
+                                  UserSerializer)
+from appointments.models import Appointments, Lab_test, Medicine, Test
 from appointments.serializers import patientAppointmentSerializer
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q
-from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
-                                  IsNurse, IsPatient, IsPharmacist,
-                                  IsReceptionist)
-from appointments.models import Appointments, Lab_test, Medicine, Test
+
 from records.serializers import MedicineSerializer, TestSerializer
-from accounts.serializers import AdministratorProfileSerializer, DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, NurseProfileSerializer, PatientProfileSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer, UserSerializer
 
 
 class TestAPIView(ModelViewSet):
@@ -538,18 +550,61 @@ class AppointmentsAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        appointment_date = serializer.validated_data["appointment_date"]
+        departmentObj = serializer.validated_data["department"]
+        if appointment_date >= datetime.now().date():
+            if (queryset.status == "Completed" or
+                queryset.completed == True or
+                    queryset.appointment_date < datetime.now().date() or
+                    queryset.expired == True):
+                return Response(
+                    {"message": "Appointment already completed or expired."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"message": "Appointment can't be rescheduled to a past date."},
+                status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        departmentObj = serializer.validated_data["department"]
+        appointment_date = serializer.validated_data["appointment_date"]
+        patientObj = serializer.validated_data["patient"]
+        patientQuery = Patient.objects.get(user=patientObj.user)
+        print(patientQuery)
+        if departmentObj.avail == True:
+            if appointment_date >= datetime.now().date():
+                appointmentExists = Appointments.objects.filter(
+                    Q(patient=patientQuery) &
+                    Q(appointment_date=appointment_date)
+                    & Q(department=departmentObj))
+                if appointmentExists.exists():
+                    return Response(
+                        {"message": "Appointment already exists."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                else:
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": "Appointment can't be scheduled on a past date."},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message": "The department is not available to patients."},
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
+
         queryset.status = "Cancelled"
         queryset.save()
         return Response(

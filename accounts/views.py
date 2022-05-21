@@ -29,7 +29,12 @@ from rest_framework.exceptions import AuthenticationFailed
 from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User)
 from accounts.serializers import (
-    AdministratorProfileSerializer, DoctorProfileSerializer, LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer, PatientProfileSerializer, PatientRegisterSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
+    AdministratorProfileSerializer, DoctorProfileSerializer,
+    LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer,
+    PatientProfileSerializer, PatientRegisterSerializer,
+    PharmacistProfileSerializer, ReceptionistProfileSerializer,
+    ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer,
+    UserSerializer, RegisterSerializer
 )
 
 
@@ -141,7 +146,7 @@ def VerifyEmail(request):
             messages.info(request,
                           """Your Account has already been activated.
                           You can now login and
-                          place your order today.
+                          book an appointment today.
                         """)
     except jwt.ExpiredSignatureError as identifier:
         messages.warning(request,

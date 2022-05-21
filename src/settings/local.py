@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'appointments.apps.AppointmentsConfig',
     'records.apps.RecordsConfig',
+    'billing.apps.BillingConfig',
 ]
 PHONENUMBER_DB_FORMAT = "NATIONAL"
 PHONENUMBER_DEFAULT_REGION = "KE"
