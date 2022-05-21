@@ -23,7 +23,7 @@ class UserSerializer(CountryFieldMixin,
     class Meta:
         model = User
         fields = ("id", "username", "full_name",
-                  "email", "phone",
+                  "email", "phone", "role", "is_active"
                   "timestamp")
         read_only_field = ("id", "email", "timestamp")
 

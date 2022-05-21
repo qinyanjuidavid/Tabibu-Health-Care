@@ -179,7 +179,7 @@ class Departments(TrackingModel):
     icon = models.ImageField(
         upload_to='department_icons', blank=True, null=True)
     avail = models.BooleanField(
-        _("avail"), default=False,
+        _("available"), default=False,
         help_text="Check if the department is essential to the patient.")
 
     def __str__(self):

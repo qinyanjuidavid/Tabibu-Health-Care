@@ -58,5 +58,6 @@ class ProfileAdmin(admin.ModelAdmin):
 @admin.register(Departments)
 class DepartmentsAdmin(admin.ModelAdmin):
     list_display = ("department",
-                    "room_number", "added_by",
+                    "room_number", "phone", "added_by",
+                    "avail", "consultation_fee",
                     "created_at")

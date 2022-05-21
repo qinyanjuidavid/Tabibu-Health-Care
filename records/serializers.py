@@ -20,6 +20,6 @@ class MedicineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Medicine
-        fields = ("id", "price", "on_stock",
+        fields = ("id", "drug", "price", "on_stock",
                   "description", "added_by")
         read_only_fields = ("id",)

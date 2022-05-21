@@ -60,7 +60,7 @@ class MedicineAPIView(ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdministrator]
     http_method_names = ["get", "post", "put", "delete"]
 
-    def get_querset(self):
+    def get_queryset(self):
         medObj = Medicine.objects.all()
         return medObj
 
@@ -77,7 +77,9 @@ class MedicineAPIView(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
         adminObj = Administrator.objects.get(user=request.user)
         serializer.save(added_by=adminObj)
@@ -115,7 +117,9 @@ class DepartmentAPIView(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
         adminObj = Administrator.objects.get(user=request.user)
         serializer.save(added_by=adminObj)

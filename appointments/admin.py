@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from appointments.models import (Appointments, Lab_test,)
+from appointments.models import (Appointments, Lab_test, Medicine)
 
 
 @admin.register(Appointments)
@@ -21,5 +21,12 @@ class appointmentAdmin(admin.ModelAdmin):
 @admin.register(Lab_test)
 class LabtestAdmin(admin.ModelAdmin):
     list_display = ("lab_test", "price",
-                    "available", "description")
+                    "available", "added_by")
     list_filter = ("available",)
+
+
+@admin.register(Medicine)
+class MedicineAdmin(admin.ModelAdmin):
+    list_display = ("drug", "price", "on_stock",
+                    "added_by")
+    list_filter = ("on_stock",)
