@@ -150,7 +150,7 @@ class DepartmentsSerializer(serializers.ModelSerializer):
 
 
 class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
@@ -165,7 +165,7 @@ class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSeriali
 
 
 class PharmacistProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
@@ -180,14 +180,16 @@ class PharmacistProfileSerializer(CountryFieldMixin, serializers.ModelSerializer
 
 
 class NurseProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Nurse
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status",
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
                   "job_id", "available"
+                  #   "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
