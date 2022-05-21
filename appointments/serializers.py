@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, PatientProfileSerializer, ReceptionistProfileSerializer
-from appointments.models import Appointments
+from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, PatientProfileSerializer, ReceptionistProfileSerializer
+from appointments.models import Appointments, Test, Tests
+from records.serializers import TestSerializer
 
 
 class patientAppointmentSerializer(serializers.ModelSerializer):
@@ -17,3 +18,33 @@ class patientAppointmentSerializer(serializers.ModelSerializer):
                   "completed", "your_message"
                   )
         read_only_fields = ("id", "appointment_fee",)
+
+
+class testSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    test = TestSerializer(read_only=True)
+    labTech = LabtechProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Test
+        fields = (
+            "id", "test", "price",
+            "tested", "date_tested", "paid",
+            "lab_tech", "results", "appointment"
+        )
+        read_only_fields = ("id", "price",)
+
+
+class testsSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    test = TestSerializer(read_only=True)
+    labTech = LabtechProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Tests
+        fields = (
+            "id", "test", "appointment",
+            "tested", "date_tested",
+            "paid"
+        )
+        read_only_fields = ("id",)

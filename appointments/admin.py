@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from appointments.models import Appointments
+from appointments.models import (Appointments, Lab_test,)
 
 
 @admin.register(Appointments)
@@ -16,3 +16,10 @@ class appointmentAdmin(admin.ModelAdmin):
         return obj.patient.user.username
     get_patient_username.short_description = "Patient"
     get_patient_username.admin_order_field = "patient__user__username"
+
+
+@admin.register(Lab_test)
+class LabtestAdmin(admin.ModelAdmin):
+    list_display = ("lab_test", "price",
+                    "available", "description")
+    list_filter = ("available",)

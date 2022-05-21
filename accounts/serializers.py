@@ -142,7 +142,10 @@ class SetNewPasswordSerializer(serializers.Serializer):
 class DepartmentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Departments
-        fields = ('id', 'department', 'room_number')
+        fields = ('id', 'department', 'room_number', "description",
+                  "added_by", "longitude", "latitude", "consultation_fee", "phone",
+                  "icon", "avail",
+                  )
         read_only_fields = ("id",)
 
 
