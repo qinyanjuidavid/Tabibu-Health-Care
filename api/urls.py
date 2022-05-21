@@ -1,4 +1,4 @@
-from records.views import DepartmentAPIView, MedicineAPIView, TestAPIView
+from records.views import DepartmentAPIView, MedicineAPIView, TestAPIView, UserAPIView
 from rest_framework.routers import SimpleRouter
 from django.views.generic import TemplateView
 from django.urls import path
@@ -50,6 +50,8 @@ routes.register("doctor-tests", DoctorTestAPIView,
                 basename="doctorTests")
 routes.register('departments', DepartmentAPIView,
                 basename="departments")
+routes.register('users', UserAPIView,
+                basename="users")
 
 # Records Routes
 routes.register("tests", TestAPIView, basename="tests")
