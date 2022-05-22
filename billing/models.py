@@ -83,7 +83,9 @@ class Payment(TrackingModel):
     last_name = models.CharField(
         _("last name"), max_length=100, blank=True, null=True)
     phone_number = models.CharField(_("phone"), max_length=20)
-    organization_balance = models.FloatField(_("organization balance"))
+    organization_balance = models.FloatField(
+        _("organization balance"), default=0.00)
+    paid = models.BooleanField(_("paid"), default=False)
 
     def __str__(self):
         return f"{self.appointment.id}.{self.appointment.patient.user.username} - {self.item} {self.total_amount}"
@@ -101,8 +103,19 @@ class Invoice(TrackingModel):
         ("Partial", "Partial"),
         ("Pending", "Pending")
     )
+    payment_method_choice = (
+        ("Cash", "Cash"),
+        ("Credit card", "Credit card"),
+        ("Jambo Pay", "Jambo Pay"),
+        ("Mpesa", "Mpesa"),
+        ("NHIF", "NHIF")
+    )
     payment = models.ManyToManyField(
         Payment, related_name="payments"
+    )
+    payment_method = models.CharField(
+        _("payment method"), max_length=33,
+        choices=payment_method_choice
     )
     invoiced_date = models.DateTimeField(_("invoiced date"), null=True)
     total_amount = models.FloatField(_("total amount"), default=0.00)

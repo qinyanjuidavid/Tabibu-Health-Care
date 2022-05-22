@@ -59,6 +59,9 @@ class Appointments(TrackingModel):
         verbose_name_plural = "Appointments"
         ordering = ("-appointment_date", "-appointment_time")
 
+    def Total_appointment_price(self):
+        return self.appointment_fee
+
 
 class Lab_test(TrackingModel):
     lab_test = models.CharField(_("test"), max_length=60,
