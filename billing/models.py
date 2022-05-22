@@ -132,13 +132,13 @@ class Invoice(TrackingModel):
         blank=True, null=True
     )
 
-    def Invoice_total(self, *args, **kwargs):
+    def Invoice_Total(self, *args, **kwargs):
         total = 0
         for pay in self.payment.all():
             total += pay.Total_Payment_amount()
-        self.total_cost = total
+        self.total_amount = total
         super(Invoice, self).save(*args, **kwargs)
         return total
 
     def __str__(self):
-        return f"{self.appointment.id}. {self.appointment.patient.user.username} - {self.total_cost}"
+        return f"{self.appointment.id}. {self.appointment.patient.user.username} - {self.total_amount}"

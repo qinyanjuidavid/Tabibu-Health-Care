@@ -9,7 +9,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models import Q
 
-# Appointment Fees
+# Consultation Fees
 
 
 @receiver(post_save, sender=Appointments)
