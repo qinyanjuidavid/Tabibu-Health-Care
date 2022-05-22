@@ -2,7 +2,7 @@ from django.db.models.signals import (
     post_save, m2m_changed, pre_delete,
     pre_save, post_delete)
 from django.dispatch import receiver
-from appointments.models import Appointments
+from appointments.models import Appointments, Test, Tests
 from billing.models import Payment, Invoice
 from datetime import datetime
 from django.utils import timezone
@@ -184,3 +184,172 @@ def appointmentPayment(sender, instance, *args, **kwargs):
                   and instance.paid_amount == 0.0):
                 paymentObj.update(paid=False, status="Pending")
                 appointmentObj.update(paid=False, status="Pending")
+
+
+@receiver(post_save, sender=Test)
+def createTestPayment(sender, instance, created, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        appointment=instance.appointment,
+        paid=False
+    )
+
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+                item=instance.text.lab_test,
+                appointment=instance.appointment,
+                paid=False).exists():
+            paymentObj = Payment.objects.get(
+                appointment=instance.appointment,
+                paid=False,
+                item=instance.test.lab_test
+            )
+            paymentObj.total_amount = instance.Total_unit_Price()
+            paymentObj.quantity = 1
+            paymentObj.sub_unit = instance.price
+            paymentObj.type = "Lab Test"
+            paymentObj.save()
+            invoiceQs.total_cost = invoiceQs.Invoice_Total()
+            invoiceQs.save()
+        else:
+            paymentObj, created = Payment.objects.get_or_create(
+                item=instance.test.lab_test,
+                appointment=instance.appointment,
+                sub_unit=instance.price,
+                type="Lab Test",
+                total_amount=instance.Total_unit_Price()
+            )
+            paymentObj.quantity = 1
+            paymentObj.save()
+    else:
+        paymentObj, _ = Payment.objects.update_or_create(
+            item=instance.test.lab_test,
+            appointment=instance.appointment,
+            sub_unit=instance.test.price,
+            type="Lab Test",
+            total_amount=instance.Total_unit_Price()
+        )
+        paymentObj.quantity = 1
+        paymentObj.save()
+
+
+@receiver(post_delete, sender=Test)
+def removeTestPayment(sender, instance, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        appointment=instance.appointment,
+        paid=False
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+                item=instance.test.lab_test,
+                appointment=instance.appointment,
+                paid=False).exists():
+            paymentQs = Payment.objects.filter(
+                appointment=instance.appointment,
+                paid=False,
+                item=instance.test.lab_test
+            )
+            for paymentQs in paymentQs:
+                invoiceQs.payment.remove(paymentQs)
+                paymentQs.delete()
+    else:
+        paymentQs = Payment.objects.filter(
+            appointment=instance.appointment,
+            paid=False,
+            item=instance.test.lab_test
+        )
+        for payment in paymentQs:
+            payment.delete()
+
+
+@receiver(post_save, sender=Appointments)
+def cancelAppointmentTests(sender, instance, created, *args, **kwargs):
+    testQs = Tests.objects.filter(
+        appointment=instance,
+        tested=False,
+        paid=False
+    )
+    if testQs.exists():
+        testQs = testQs[0]
+        if (instance.status == "Cancelled" and
+                instance.paid is False):
+            if testQs.test.filter(
+                    appointment=instance,
+                    tested=False,
+                    paid=False).exists():
+                testObj = Test.objects.filter(
+                    appointment=instance, paid=False,
+                    tested=False)
+                for test in testObj:
+                    testQs.test.remove(test)
+                    test.delete()
+                testQs.delete()
+            else:
+                testQs.delete()
+# Remove tests upon appointment deletion
+
+
+@receiver(post_delete, sender=Appointments)
+def removeTests(sender, instance, *args, **kwargs):
+    testQs = Tests.objects.filter(
+        appointment=instance,
+        tested=False,
+        paid=False
+    )
+    if testQs.exists():
+        testQs = testQs[0]
+        if testQs.test.filter(
+                appointment=instance,
+                tested=False,
+                paid=False).exists():
+            testObj = Test.objects.filter(
+                appointment=instance, tested=False,
+                paid=False)
+            for testObj in testObj:
+                testQs.test.remove(testObj)
+                testObj.delete()
+            testQs.delete()
+        else:
+            testQs.delete()
+    else:
+        testObj = Test.objects.filter(
+            appointment=instance, paid=False,
+            tested=False
+        )
+        for test in testObj:
+            test.delete()
+
+# Tesr Payment
+
+
+@receiver(post_save, sender=Payment)
+def testPayment(sender, instance, created, *args, **kwargs):
+    testQs = Test.objects.filter(appointment=instance.appointment,
+                                 test__lab_test=instance.item)
+    if testQs.exists():
+        testQs = testQs[0]
+        if Payment.objects.filter(
+                item=testQs.test.lab_test,
+                appointment=testQs.appointment).exists():
+            paymentQuery = Payment.objects.filter(
+                item=testQs.test.lab_test,
+                appointment=testQs.appointment
+            )
+            testQuery = Test.objects.filter(
+                appointment=instance.appointment,
+                test__lab_test=instance.item,
+                price=instance.total_amount
+            )
+            if (instance.type == "Lab Test" and
+                    instance.total_amount <= instance.paid_amount):
+                paymentQuery.update(paid=True, status="Completed")
+                testQuery.update(paid=True)
+            elif (instance.type == "Lab Test" and instance.paid_amount > 0 and
+                  instance.total_amount >
+                  instance.paid_amount):
+                paymentQuery.update(paid=False, status="Partial")
+                testQuery.update(paid=False)
+            elif (instance.type == "Lab Test" and instance.paid_amount == 0):
+                paymentQuery.update(paid=False, status="Pending")
+                testQuery.update(paid=False)
