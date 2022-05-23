@@ -2,7 +2,7 @@ from django.db.models.signals import (
     post_save, m2m_changed, pre_delete,
     pre_save, post_delete)
 from django.dispatch import receiver
-from appointments.models import Appointments, Test, Tests
+from appointments.models import Appointments, Medication, Medication_Bag, Test, Tests
 from billing.models import Payment, Invoice
 from datetime import datetime
 from django.utils import timezone
@@ -353,3 +353,167 @@ def testPayment(sender, instance, created, *args, **kwargs):
             elif (instance.type == "Lab Test" and instance.paid_amount == 0):
                 paymentQuery.update(paid=False, status="Pending")
                 testQuery.update(paid=False)
+
+
+def createMedicationPayment(sender, instance, created, *args, **kwargs):
+    invoiceObj = Invoice.objects.filter(
+        appointment=instance.appointment,
+        paid=False
+    )
+    if invoiceObj.exists():
+        invoiceObj = invoiceObj[0]
+        if invoiceObj.payment.filter(
+                item=instance.medicine.drug,
+                appointment=instance.appointment,
+                paid=False).exists():
+            paymentObj = Payment.objects.get(appointment=instance.appointment,
+                                             paid=False,
+                                             item=instance.medicine.drug)
+            paymentObj.total_amount = instance.Total_medication_price()
+            paymentObj.quantity = instance.quantity
+            paymentObj.sub_unit = instance.medicine.price
+            paymentObj.type = "Medicine"
+            paymentObj.save()
+            invoiceObj.total_cost = invoiceObj.Invoice_Total()
+            invoiceObj.save()
+
+        else:
+            paymentObj, created = Payment.objects.get_or_create(
+                item=instance.medicine.drug,
+                appointment=instance.appointment,
+                type="Medicine",
+                sub_unit=instance.medicine.price,
+                total_amount=instance.Total_medication_price()
+            )
+            paymentObj.quantity = instance.quantity
+            paymentObj.save()
+    else:
+        paymentObj, created = Payment.objects.get_or_create(
+            item=instance.medicine.drug,
+            appointment=instance.appointment,
+            sub_unit=instance.medicine.price,
+            type="Medicine",
+            total_amount=instance.Total_medication_price()
+        )
+        paymentObj.quantity = instance.quantity
+        paymentObj.save()
+
+
+@receiver(post_delete, sender=Medication)
+def removeMedicationPayment(sender, instance, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        appointment=instance.appointment,
+        paid=False
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(item=instance.medicine.drug,
+                                    appointment=instance.appointment,
+                                    paid=False).exists():
+            paymentObj = Payment.objects.filter(
+                appointment=instance.appointment,
+                paid=False,
+                item=instance.medicine.drug
+            )
+            for paymentObj in paymentObj:
+                invoiceQs.payment.remove(paymentObj)
+                paymentObj.delete()
+    else:
+        paymentObj = Payment.objects.filter(
+            appointment=instance.appointment,
+            paid=False,
+            item=instance.medicine.drug
+        )
+        for paymentObj in paymentObj:
+            paymentObj.delete()
+
+
+@receiver(post_save, sender=Appointments)
+def cancelAppointmentMedication(sender, instance, created, *args, **kwargs):
+    prescriptionQs = Medication_Bag.objects.filter(
+        appointment=instance,
+        paid=False,
+        dispenced=False
+    )
+    if prescriptionQs.exists():
+        prescriptionQs = prescriptionQs[0]
+        if instance.status == "Cancelled" and instance.paid is False:
+            if prescriptionQs.medication.filter(
+                    appointment=instance, dispenced=False,
+                    paid=False).exists():
+                medicationObj = Medication.objects.filter(
+                    appointment=instance, dispenced=False,
+                    paid=False
+                )
+                for med in medicationObj:
+                    prescriptionQs.medication.remove(med)
+                    med.delete()
+                prescriptionQs.delete()
+            else:
+                prescriptionQs.delete()
+
+
+# Remove medications upon Appointment deletion
+@receiver(post_delete, sender=Appointments)
+def removeMedication(sender, instance, *args, **kwargs):
+    prescriptionObj = Medication_Bag.objects.filter(
+        appointment=instance,
+        paid=False,
+        dispenced=False
+    )
+    if prescriptionObj.exists():
+        prescriptionObj = prescriptionObj[0]
+        if prescriptionObj.medication.filter(
+                appointment=instance, dispenced=False,
+                paid=False).exists():
+            medicationQs = Medication.objects.filter(
+                appointment=instance, dispenced=False,
+                paid=False
+            )
+            for med in medicationQs:
+                prescriptionObj.medication.remove(med)
+                med.delete()
+            prescriptionObj.delete()
+        else:
+            prescriptionObj.delete()
+    else:
+        medicationQs = Medication.objects.filter(
+            appointment=instance, dispenced=False, paid=False
+        )
+        for med in medicationQs:
+            med.delete()
+
+
+@receiver(post_save, sender=Payment)
+def medicationPayment(sender, instance, created, *args, **kwargs):
+    medQs = Medication.objects.filter(
+        appointment=instance.appointment,
+        medicine__drug=instance.item
+    )
+    if medQs.exists():
+        medQs = medQs[0]
+        if Payment.objects.filter(item=medQs.medicine.drug,
+                                  appointment=medQs.appointment).exists():
+            paymentObj = Payment.objects.filter(
+                item=medQs.medicine.drug,
+                appointment=medQs.appointment
+            )
+            medQuery = Medication.objects.filter(
+                appointment=instance.appointment,
+                medicine__drug=instance.item,
+                price=instance.sub_unit
+            )
+            if (instance.type == "Medicine" and instance.total_amount <= instance.paid_amount):
+                paymentObj.update(paid=True, status="Completed")
+                medQuery.update(paid=True)
+
+            elif (instance.type == "Medicine" and
+                  instance.paid_amount > 0 and
+                  instance.total_amount > instance.paid_amount):
+                paymentObj.update(paid=False, status="Partial")
+                medQuery.update(paid=False)
+            elif (instance.type == "Medicine" and instance.paid_amoint == 0):
+                paymentObj.update(paid=False, status="Pending")
+                medQuery.update(paid=False)
+    else:
+        print("Medication does not exists...")
