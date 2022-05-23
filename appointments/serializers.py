@@ -18,12 +18,17 @@ class patientAppointmentSerializer(serializers.ModelSerializer):
                   "completed", "your_message"
                   )
         read_only_fields = ("id", "appointment_fee",)
+        # patients Fields---> patient,department,appointment_date,appointment_time,your_message (Ok)
+        # Receptionist---> patient[No updates], department,appointment_date,appointment_time,receptionist
+        # paid will occur on billing or Invoicing signals
+        # Doctor---> doctor,notes,findings,completed
+        # Doctor Views
 
 
 class testSerializer(serializers.ModelSerializer):
-    appointment = patientAppointmentSerializer(read_only=True)
-    test = TestSerializer(read_only=True)
-    labTech = LabtechProfileSerializer(read_only=True)
+    # appointment = patientAppointmentSerializer(read_only=True)
+    # test = TestSerializer(read_only=True)  # Lab-test
+    # lab_tech = LabtechProfileSerializer(read_only=True)
 
     class Meta:
         model = Test
@@ -33,12 +38,14 @@ class testSerializer(serializers.ModelSerializer):
             "lab_tech", "results", "appointment"
         )
         read_only_fields = ("id", "price",)
+    # Doctor --->appointment,test
+    # labtech---> lab_tech,results,date_tested(Now),tested
+    # Recepionist---> Bill(paid)
 
 
 class testsSerializer(serializers.ModelSerializer):
     appointment = patientAppointmentSerializer(read_only=True)
-    test = TestSerializer(read_only=True)
-    labTech = LabtechProfileSerializer(read_only=True)
+    # test = testSerializer(read_only=True)
 
     class Meta:
         model = Tests
@@ -48,3 +55,7 @@ class testsSerializer(serializers.ModelSerializer):
             "paid"
         )
         read_only_fields = ("id",)
+
+        # Doctor---> test, appointment
+        # labtech---> date_tested,tested
+        # Receptionist---> paid

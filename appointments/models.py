@@ -96,7 +96,7 @@ class Test(TrackingModel):
         on_delete=models.DO_NOTHING, blank=True,
         null=True
     )
-    results = models.TextField(_("results"))
+    results = models.TextField(_("results"), blank=True, null=True)
 
     def __str__(self):
         return f"{self.appointment.id}. {self.test.lab_test}"
@@ -127,7 +127,7 @@ class Tests(TrackingModel):
         return total
 
     class Meta:
-        verbose_name_plural = "Patient Tests"
+        verbose_name_plural = "Tests Cart"
 
 
 class Medicine(TrackingModel):
