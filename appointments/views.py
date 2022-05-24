@@ -8,7 +8,7 @@ from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsReceptionist)
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
-from records.serializers import TestSerializer
+from records.serializers import MedicineSerializer, TestSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
-from appointments.models import Appointments, Lab_test, Test, Tests
+from appointments.models import Appointments, Lab_test, Medicine, Test, Tests
 from appointments.serializers import patientAppointmentSerializer, testSerializer, testsSerializer
 
 
@@ -93,10 +93,10 @@ class PatientAppointmentsApiView(ModelViewSet):
         if department.avail == True:
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
-                        queryset.completed == True or
-                            queryset.appointment_date < datetime.now().date() or
-                            queryset.expired == True
-                            # queryset.paid == True
+                            queryset.completed == True or
+                        queryset.appointment_date < datetime.now().date() or
+                        queryset.expired == True
+                        # queryset.paid == True
                         ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
@@ -124,7 +124,7 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-            or queryset.completed == True
+                or queryset.completed == True
             ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
@@ -414,12 +414,10 @@ class TestRecommendation(ModelViewSet):
             recoTest, created = Test.objects.get_or_create(
                 test=serializedTest,
                 appointment=serializedAppointment,
-                price=serializedTest.price
-            )
+                price=serializedTest.price)
             if recoTest.tested == False or recoTest.paid == False:
                 testsObj = Tests.objects.filter(
-                    Q(appointment=serializedAppointment)
-                )
+                    Q(appointment=serializedAppointment))
                 if testsObj.exists():
                     testsObj = testsObj[0]
                     if testsObj.test.filter(
@@ -430,24 +428,55 @@ class TestRecommendation(ModelViewSet):
                         recoTest.delete()
                         return Response(
                             {"message": "Test was successfully removed from the patient's test cart."},
-                            status=status.HTTP_200_OK
-                        )
+                            status=status.HTTP_200_OK)
+                    else:
+                        testsObj.delete()
+                        return Response(
+                            {"message": "Test cart was successfully deleted."},
+                            status=status.HTTP_204_NO_CONTENT)
                 else:
                     return Response(
                         {"message": "Test does not exist in the patient's test cart."},
-                        status=status.HTTP_204_BAD_REQUEST
-                    )
+                        status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response(
                     {"message": "Can't remove a used or a test that has been paid for."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                    status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                 {"message": "Test can't be removed from an outdated or expired appointment"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                status=status.HTTP_400_BAD_REQUEST)
         return Response(cartSerializer.data, status=status.HTTP_200_OK)
 
-    # def destroy(self, request, pk=None, *args, **kwargs):
-    #     pass
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        for test in queryset.test.all():
+            test.delete()
+        queryset.delete()
+        return Response(
+            {"message": "Patients tests were successfully deleted."},
+            status=status.HTTP_204_NO_CONTENT)
+
+
+class DoctorMedicineAPIView(ModelViewSet):
+    serializer_class = MedicineSerializer
+    permission_classes = [IsAuthenticated, IsDoctor]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        medQuery = Medicine.objects.filter(
+            on_stock=True
+        )
+        return medQuery
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
