@@ -93,11 +93,11 @@ class PatientAppointmentsApiView(ModelViewSet):
         if department.avail == True:
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
-                            queryset.completed == True or
+                    queryset.completed == True or
                         queryset.appointment_date < datetime.now().date() or
                         queryset.expired == True
                         # queryset.paid == True
-                        ):
+                    ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -124,8 +124,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-                or queryset.completed == True
-            ):
+                    or queryset.completed == True
+                ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -480,3 +480,8 @@ class DoctorMedicineAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MedicineRecommendation(ModelViewSet):
+    # serializer_class=
+    pass

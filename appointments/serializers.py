@@ -1,7 +1,8 @@
+from accounts.models import Pharmacist
 from rest_framework import serializers
-from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, PatientProfileSerializer, ReceptionistProfileSerializer
-from appointments.models import Appointments, Test, Tests
-from records.serializers import TestSerializer
+from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, PatientProfileSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer
+from appointments.models import Appointments, Medication, Medication_Bag, Test, Tests
+from records.serializers import MedicineSerializer, TestSerializer
 
 
 class patientAppointmentSerializer(serializers.ModelSerializer):
@@ -59,3 +60,33 @@ class testsSerializer(serializers.ModelSerializer):
         # Doctor---> test, appointment
         # labtech---> date_tested,tested
         # Receptionist---> paid
+
+
+class medicationSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    medicine = MedicineSerializer(read_only=True)
+    Pharmacist = PharmacistProfileSerializer(read_only=True)
+    doctor = DoctorProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Medication
+        fields = (
+            "id", "medicine", "appointment",
+            "price", "quantity", "notes",
+            "duration", "doctor", "pharmacist",
+            "dispenced"
+        )
+        read_only = ("id", "price")
+
+
+class MedicationBagSerializer(serializers.ModelSerializer):
+    appointment = patientAppointmentSerializer(read_only=True)
+    medication = medicationSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Medication_Bag
+        fields = (
+            "id", "medication", "paid",
+            "dispenced"
+        )
+        read_only = ("id",)
