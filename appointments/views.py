@@ -13,6 +13,7 @@ from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
 from appointments.models import Appointments, Lab_test, Test, Tests
@@ -331,7 +332,12 @@ class DoctorTestAPIView(ModelViewSet):
 class TestRecommendation(ModelViewSet):
     serializer_class = testsSerializer
     permission_classes = [IsAuthenticated, IsDoctor]
-    http_method_names = ["get", "post", "put", "delete"]
+    http_method_names = ["get", "post", "delete"]
+    """
+    1. Creation of tests basing on the appointment,
+    2. Removal of single test from the patient's test cart
+    3. Removal of all the tests from the patient's test cart
+    """
 
     def get_queryset(self):
         testsCart = Tests.objects.all()
@@ -359,6 +365,7 @@ class TestRecommendation(ModelViewSet):
                 appointment=serializedAppointment,
                 price=serializedTest.price
             )
+
             testsObj = Tests.objects.filter(
                 Q(appointment=serializedAppointment)
             )
@@ -391,5 +398,56 @@ class TestRecommendation(ModelViewSet):
             )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, pk=None, *args, **kwargs):
-        pass
+    # The Doctor can remove a single test from the patients test cart
+
+    @action(detail=True, methods=['delete', "get", "post"],
+            permission_classes=[IsAuthenticated, IsDoctor])
+    def remove_single_test(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        cartSerializer = self.get_serializer(queryset)
+        serializer = testSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializedTest = serializer.validated_data["test"]
+        serializedAppointment = serializer.validated_data["appointment"]
+        if serializedAppointment.appointment_date >= datetime.now().date():
+            recoTest, created = Test.objects.get_or_create(
+                test=serializedTest,
+                appointment=serializedAppointment,
+                price=serializedTest.price
+            )
+            if recoTest.tested == False or recoTest.paid == False:
+                testsObj = Tests.objects.filter(
+                    Q(appointment=serializedAppointment)
+                )
+                if testsObj.exists():
+                    testsObj = testsObj[0]
+                    if testsObj.test.filter(
+                            Q(test__id=serializedTest.id)).exists():
+                        recoTest = Test.objects.get(appointment=serializedAppointment,
+                                                    test__id=serializedTest.id)
+                        testsObj.test.remove(recoTest)
+                        recoTest.delete()
+                        return Response(
+                            {"message": "Test was successfully removed from the patient's test cart."},
+                            status=status.HTTP_200_OK
+                        )
+                else:
+                    return Response(
+                        {"message": "Test does not exist in the patient's test cart."},
+                        status=status.HTTP_204_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {"message": "Can't remove a used or a test that has been paid for."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"message": "Test can't be removed from an outdated or expired appointment"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(cartSerializer.data, status=status.HTTP_200_OK)
+
+    # def destroy(self, request, pk=None, *args, **kwargs):
+    #     pass

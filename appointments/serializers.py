@@ -45,7 +45,7 @@ class testSerializer(serializers.ModelSerializer):
 
 class testsSerializer(serializers.ModelSerializer):
     appointment = patientAppointmentSerializer(read_only=True)
-    # test = testSerializer(read_only=True)
+    test = testSerializer(read_only=True, many=True)
 
     class Meta:
         model = Tests

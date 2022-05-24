@@ -115,7 +115,7 @@ class Tests(TrackingModel):
     tested = models.BooleanField(_("tested"), default=False)
     date_tested = models.DateTimeField(_("date tested"),
                                        null=True)
-    paid = models.BooleanField(_("dispenced"), default=False)
+    paid = models.BooleanField(_("paid"), default=False)
 
     def __str__(self):
         return self.appointment.patient.user.username
