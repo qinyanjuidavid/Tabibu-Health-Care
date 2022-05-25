@@ -63,10 +63,10 @@ class testsSerializer(serializers.ModelSerializer):
 
 
 class medicationSerializer(serializers.ModelSerializer):
-    appointment = patientAppointmentSerializer(read_only=True)
-    medicine = MedicineSerializer(read_only=True)
-    Pharmacist = PharmacistProfileSerializer(read_only=True)
-    doctor = DoctorProfileSerializer(read_only=True)
+    # appointment = patientAppointmentSerializer(read_only=True)
+    # medicine = MedicineSerializer(read_only=True)
+    # pharmacist = PharmacistProfileSerializer(read_only=True)
+    # doctor = DoctorProfileSerializer(read_only=True)
 
     class Meta:
         model = Medication
@@ -76,7 +76,7 @@ class medicationSerializer(serializers.ModelSerializer):
             "duration", "doctor", "pharmacist",
             "dispenced"
         )
-        read_only = ("id", "price")
+        read_only_fields = ("id", "price")
 
 
 class MedicationBagSerializer(serializers.ModelSerializer):
@@ -86,7 +86,7 @@ class MedicationBagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medication_Bag
         fields = (
-            "id", "medication", "paid",
-            "dispenced"
+            "id", "medication", "appointment",
+            "paid", "dispenced"
         )
-        read_only = ("id",)
+        read_only_fields = ("id",)

@@ -96,6 +96,9 @@ class Test(TrackingModel):
         on_delete=models.DO_NOTHING, blank=True,
         null=True
     )
+    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING,
+                               blank=True, null=True)
+
     results = models.TextField(_("results"), blank=True, null=True)
 
     def __str__(self):
@@ -159,7 +162,8 @@ class Medication(TrackingModel):
         _("duration"), max_length=57,
         blank=True, null=True
     )
-    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING)
+    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING,
+                               blank=True, null=True)
     pharmacist = models.ForeignKey(
         Pharmacist, blank=True, null=True,
         on_delete=models.DO_NOTHING
@@ -175,7 +179,7 @@ class Medication(TrackingModel):
         return self.quantity*self.price
 
     class Meta:
-        verbose_name_plural = "Medication"
+        verbose_name_plural = "Prescription"
 
 
 class Medication_Bag(TrackingModel):
@@ -187,11 +191,11 @@ class Medication_Bag(TrackingModel):
     def __str__(self):
         return self.appointment.patient.user.username
 
-    def Totap_Prescription_price(self):
+    def Total_Prescription_price(self):
         total = 0
         for med in self.medication.all():
             total += med.Total_medication_price()
         return total
 
     class Meta:
-        verbose_name_plural = "Medication Bag"
+        verbose_name_plural = "Prescription Cart"

@@ -16,8 +16,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
-from appointments.models import Appointments, Lab_test, Medicine, Test, Tests
-from appointments.serializers import patientAppointmentSerializer, testSerializer, testsSerializer
+from appointments.models import Appointments, Lab_test, Medication, Medication_Bag, Medicine, Test, Tests
+from appointments.serializers import MedicationBagSerializer, medicationSerializer, patientAppointmentSerializer, testSerializer, testsSerializer
 
 
 class PatientAppointmentsApiView(ModelViewSet):
@@ -360,47 +360,58 @@ class TestRecommendation(ModelViewSet):
         serializedTest = serializer.validated_data["test"]
         serializedAppointment = serializer.validated_data["appointment"]
         if serializedAppointment.appointment_date >= datetime.now().date():
-            recoTest, created = Test.objects.get_or_create(
-                test=serializedTest,
-                appointment=serializedAppointment,
-                price=serializedTest.price
-            )
+            if serializedTest.available == True:
 
-            testsObj = Tests.objects.filter(
-                Q(appointment=serializedAppointment)
-            )
-            if testsObj.exists():
-                testsObj = testsObj[0]
-                if testsObj.test.filter(
-                        Q(test__id=serializedTest.id)).exists():
-                    recoTest.save()
-                    return Response(
-                        {"message": "Test already exists in the appointment."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                recoTest, created = Test.objects.get_or_create(
+                    test=serializedTest,
+                    appointment=serializedAppointment,
+                    price=serializedTest.price
+                )
+
+                testsObj = Tests.objects.filter(
+                    Q(appointment=serializedAppointment)
+                )
+                if testsObj.exists():
+                    testsObj = testsObj[0]
+                    if testsObj.test.filter(
+                            Q(test__id=serializedTest.id)).exists():
+                        recoTest.save()
+                        return Response(
+                            {"message": "Test already exists in the appointment."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    else:
+                        testsObj.test.add(recoTest)
+                        return Response(
+                            {"message": "Test was successfully added to the appointment."},
+                            status=status.HTTP_201_CREATED
+                        )
                 else:
+                    testsObj = Tests.objects.create(
+                        appointment=serializedAppointment
+                    )
                     testsObj.test.add(recoTest)
+                    testsObj.save()
                     return Response(
                         {"message": "Test was successfully added to the appointment."},
                         status=status.HTTP_201_CREATED
                     )
             else:
-                testsObj = Tests.objects.create(
-                    appointment=serializedAppointment
-                )
-                testsObj.test.add(recoTest)
                 return Response(
-                    {"message": "Test was successfully added to the appointment."}
+                    {"message": "Test not been offered currently."},
+                    status=status.HTTP_400_BAD_REQUEST
+
                 )
         else:
             return Response(
-                {"message": "Test can't be added to an outdated or expired appointment."}
+                {"message": "Test can't be added to an outdated or expired appointment."},
+                status=status.HTTP_400_BAD_REQUEST
             )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     # The Doctor can remove a single test from the patients test cart
 
-    @action(detail=True, methods=['delete', "get", "post"],
+    @action(detail=True, methods=["get", "post"],
             permission_classes=[IsAuthenticated, IsDoctor])
     def remove_single_test(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
@@ -483,5 +494,215 @@ class DoctorMedicineAPIView(ModelViewSet):
 
 
 class MedicineRecommendation(ModelViewSet):
-    # serializer_class=
+    serializer_class = MedicationBagSerializer
+    permission_classes = [IsAuthenticated, IsDoctor]
+    http_method_names = ["get", "post", "delete"]
+    """
+    1. Creation of medicine recommendations basing on the appointment,
+    2. Quantity increament and decreament
+    3. Removal of single medicine from the patients medication cart
+    4. Removal of all the tests from the patients medication cart
+    """
+
+    def get_qeuryset(self):
+        medicationCart = Medication_Bag.objects.all()
+        return medicationCart
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_qeuryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_qeuryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = medicationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializedMedicine = serializer.validated_data["medicine"]
+        serializedAppointment = serializer.validated_data["appointment"]
+        if serializedAppointment.appointment_date >= datetime.now().date():
+            if serializedMedicine.on_stock == True:
+                prescribedMed, created = Medication.objects.get_or_create(
+                    medicine=serializedMedicine,
+                    appointment=serializedAppointment,
+                    price=serializedMedicine.price
+                )
+                medCartObj = Medication_Bag.objects.filter(
+                    Q(appointment=serializedAppointment)
+                )
+                if medCartObj.exists():
+                    medCartObj = medCartObj[0]
+                    if medCartObj.medication.filter(
+                            Q(medicine__id=serializedMedicine.id)).exists():
+                        prescribedMed.doctor = Doctor.objects.get(
+                            user=request.user)
+                        prescribedMed.quantity += 1
+                        prescribedMed.save()
+                        return Response(
+                            {"message": "Medicine quantity was successfully added."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    else:
+                        medCartObj.medication.add(prescribedMed)
+                        return Response(
+                            {"message": "Medicine was successfully added to the appointment."},
+                            status=status.HTTP_201_CREATED
+                        )
+                else:
+                    medCartObj = Medication_Bag.objects.create(
+                        appointment=serializedAppointment
+                    )
+                    medCartObj.medicine.add(prescribedMed)
+                    medCartObj.save()
+                    return Response(
+                        {"message": "Medicine was successfully added to the prescription cart."},
+                        status=status.HTTP_201_CREATED
+                    )
+            else:
+                return Response(
+                    {"message": "Medicine out of stock."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"message": "Medicine can't be prescribed using an outdated or expired appointment"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get', 'post'],
+            permission_classes=[IsAuthenticated, IsDoctor])
+    def remove_single_medicine(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_qeuryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = medicationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializedMedicine = serializer.validated_data["medicine"]
+        serializedAppointment = serializer.validated_data["appointment"]
+        if serializedAppointment.appointment_date >= datetime.now().date():
+            recoMed, created = Medication.objects.get_or_create(
+                medicine=serializedMedicine,
+                appointment=serializedAppointment,
+                price=serializedMedicine.price)
+            if recoMed.dispenced == False or recoMed.paid == False:
+                medCartObj = Medication_Bag.objects.filter(
+                    Q(appointment=serializedAppointment))
+                if medCartObj.exists():
+                    medCartObj = medCartObj[0]
+                    if medCartObj.medication.filter(
+                        Q(medicine__id=serializedMedicine)
+                    ).exists():
+                        recoMed = Medication.objects.get(
+                            appointment=serializedAppointment,
+                            medicine__id=serializedMedicine.id)
+                        medCartObj.medication.remove(recoMed)
+                        recoMed.delete()
+                        return Response(
+                            {"message": "Medicine was successfully removed from the patient's prescription cart."},
+                            status=status.HTTP_200_OK
+                        )
+                    else:
+                        medCartObj.delete()
+                        return Response(
+                            {"message": "Prescritpion cart is empty."},
+                            status=status.HTTP_200_OK
+                        )
+                else:
+                    return Response(
+                        {"message": "Medicine does not exist in the patient's prescription cart."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {"message": "Can't remove medicine from a dispenced or a paid prescription."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"message": "Medicine can't be removed from an outdated or expired appointment."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=["post", "get"],
+            permission_classes=[IsAuthenticated, IsDoctor])
+    def decrease_medicine_quantity(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = medicationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializedMedicine = serializer.validated_data["medicine"]
+        serializedAppointment = serializer.validated_data["appointment"]
+        if serializedAppointment.appointment_date >= datetime.now().date():
+            recoMed, created = Medication.objects.get_or_create(
+                medicine=serializedMedicine,
+                appointment=serializedAppointment,
+                price=serializedMedicine.price)
+            if recoMed.dispenced == False or recoMed.paid == False:
+                medCartObj = Medication_Bag.objects.filter(
+                    Q(appointment=serializedAppointment)
+                )
+                if medCartObj.exists():
+                    medCartObj = medCartObj[0]
+                    if medCartObj.medication.filter(
+                            Q(medicine__id=serializedMedicine)).exists():
+                        recoMed = Medication.objects.get(
+                            appointment=serializedAppointment,
+                            medicine__id=serializedMedicine.id)
+                        if recoMed.quantity > 1:
+                            recoMed -= 1
+                            recoMed.save()
+                            return Response(
+                                {"message": "The medicine quantity was reduced."},
+                                status=status.HTTP_200_OK
+                            )
+                        else:
+                            medCartObj.medication.remove(recoMed)
+                            recoMed.delete()
+                            return Response(
+                                {"message": "The medicine was successfully removed"},
+                                status=status.HTTP_200_OK
+                            )
+                    else:
+                        medCartObj.delete()
+                        return Response(
+                            {"message": "Prescription cart is empty."},
+                            status=status.HTTP_200_OK
+                        )
+                else:
+                    return Response(
+                        {"message": "Medicine does not exist in the prescription cart."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {"message": "Quantity can't be added to an already paid or dispenced medicine."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"message": "Medicine of an outdated or expired appointment can't be altered."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        for med in queryset.medication.all():
+            med.delete()
+        queryset.delete()
+        return Response(
+            {"message": "Patient's medications were successfully deleted."},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class ReceptionistTestCartAPIView(ModelViewSet):
+    pass
+
+
+class LabtechTestCartAPIView(ModelViewSet):
     pass
