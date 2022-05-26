@@ -220,8 +220,3 @@
 
 - Brainstorm
 - Implement Feature
-
-#### Chat
-
-- Brainstorm
-- Implement Feature

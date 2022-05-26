@@ -72,7 +72,7 @@ class medicationSerializer(serializers.ModelSerializer):
         model = Medication
         fields = (
             "id", "medicine", "appointment",
-            "price", "quantity", "notes", "paid"
+            "price", "quantity", "notes", "paid",
             "duration", "doctor", "pharmacist",
             "dispenced", "prescription_date",
             "date_dispenced"

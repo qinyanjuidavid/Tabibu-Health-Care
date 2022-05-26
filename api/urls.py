@@ -13,7 +13,7 @@ from accounts.views import (
     VerifyEmail
 )
 
-from appointments.views import DoctorAppointmentApiView, DoctorMedicineAPIView, DoctorTestAPIView, MedicineRecommendation, PatientAppointmentsApiView, ReceptionistApointmentApiView, ReceptionistTestCartAPIView, TestRecommendation
+from appointments.views import DoctorAppointmentApiView, DoctorMedicineAPIView, DoctorTestAPIView, LabtechTestCartAPIView, LabtechTestsAPIView, MedicineRecommendation, PatientAppointmentsApiView, PharmacistMedicationAPIView, PharmacistPrescriptionCartAPIView, ReceptionistApointmentApiView, ReceptionistMedicationAPIView, ReceptionistPrescriptionAPIView, ReceptionistTestCartAPIView, ReceptionistTestsAPIView, TestRecommendation
 app_name = "api"
 routes = SimpleRouter()
 routes.register('login', LoginViewSet, basename='login')
@@ -52,8 +52,22 @@ routes.register("doctor/medicine", DoctorMedicineAPIView,
                 basename="doctor-medicine")
 routes.register("medicine/recommendation", MedicineRecommendation,
                 basename="medicine-recommendation")
-routes.register("receptionist/test", ReceptionistTestCartAPIView,
+routes.register("receptionist/test/cart", ReceptionistTestCartAPIView,
                 basename="receptionist-test-cart")
+routes.register("receptionist/tests", ReceptionistTestsAPIView,
+                basename="receptionist-tests")
+routes.register("receptionist/prescriptions", ReceptionistPrescriptionAPIView,
+                basename="receptionist-prescription")
+routes.register("receptionist/medications", ReceptionistMedicationAPIView,
+                basename="receptionist-medications")
+routes.register("labtech/test/cart", LabtechTestCartAPIView,
+                basename="labtech-test-cart")
+routes.register("labtech/tests", LabtechTestsAPIView,
+                basename="labtech-tests")
+routes.register("pharmacist/prescriptions", PharmacistPrescriptionCartAPIView,
+                basename="pharmacist-prescription")
+routes.register("pharmacist/medications", PharmacistMedicationAPIView,
+                basename="pharmacist-medications")
 
 
 # Records Routes
