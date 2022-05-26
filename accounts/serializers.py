@@ -174,7 +174,7 @@ class PharmacistProfileSerializer(CountryFieldMixin, serializers.ModelSerializer
                   "town", "estate", "gender", "department",
                   "marital_status", "date_of_birth",
                   "job_id", "available",
-                  #   "profile_picture"
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
@@ -247,7 +247,7 @@ class PatientProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
         fields = ("id", "user", "bio", "id_no", "nationality", "town", "estate",
                   "gender", "marital_status", "date_of_birth", "blood_group", "weight",
                   "height", "blood_pressure", "blood_sugar", "allergies",
-                  #   "profile_picture"
+                  "profile_picture"
                   )
 
         read_only_fields = ("id",)

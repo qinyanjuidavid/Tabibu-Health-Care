@@ -5,5 +5,5 @@ class BillingConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'billing'
 
-    def ready():
+    def ready(self):
         import billing.signals

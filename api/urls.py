@@ -1,4 +1,4 @@
-from records.views import AdministratorAPIView, DepartmentAPIView, DoctorAPIView, LabtechAPIView, MedicineAPIView, NurseAPIView, PatientAPIView, PharmacistAPIView, ReceptionistAPIView, TestAPIView, UserAPIView
+from records.views import AdministratorAPIView, AppointmentsAPIView, DepartmentAPIView, DoctorAPIView, InvoiceAPIView, LabtechAPIView, MedicineAPIView, NurseAPIView, PatientAPIView, PaymentAPIView, PharmacistAPIView, ReceptionistAPIView, TestAPIView, UserAPIView
 from rest_framework.routers import SimpleRouter
 from django.views.generic import TemplateView
 from django.urls import path
@@ -13,7 +13,7 @@ from accounts.views import (
     VerifyEmail
 )
 
-from appointments.views import DoctorAppointmentApiView, DoctorTestAPIView, PatientAppointmentsApiView, ReceptionistApointmentApiView
+from appointments.views import DoctorAppointmentApiView, DoctorMedicineAPIView, DoctorTestAPIView, LabtechTestCartAPIView, LabtechTestsAPIView, MedicineRecommendation, PatientAppointmentsApiView, PharmacistMedicationAPIView, PharmacistPrescriptionCartAPIView, ReceptionistApointmentApiView, ReceptionistMedicationAPIView, ReceptionistPrescriptionAPIView, ReceptionistTestCartAPIView, ReceptionistTestsAPIView, TestRecommendation
 app_name = "api"
 routes = SimpleRouter()
 routes.register('login', LoginViewSet, basename='login')
@@ -42,10 +42,32 @@ routes.register('patient/profile', PatientProfileAPIView,
 # Appointment Routes
 routes.register('appointment', PatientAppointmentsApiView,
                 basename='appointment')
-routes.register("doctor-appointments", DoctorAppointmentApiView,
-                basename="doctorsAppointment")
 routes.register('receptionist-appointments', ReceptionistApointmentApiView,
                 basename="receptionistAppointment")
+routes.register("doctor-appointments", DoctorAppointmentApiView,
+                basename="doctorsAppointment")
+routes.register("test/recommendation", TestRecommendation,
+                basename="test-recommendation")
+routes.register("doctor/medicine", DoctorMedicineAPIView,
+                basename="doctor-medicine")
+routes.register("medicine/recommendation", MedicineRecommendation,
+                basename="medicine-recommendation")
+routes.register("receptionist/test/cart", ReceptionistTestCartAPIView,
+                basename="receptionist-test-cart")
+routes.register("receptionist/tests", ReceptionistTestsAPIView,
+                basename="receptionist-tests")
+routes.register("receptionist/prescriptions", ReceptionistPrescriptionAPIView,
+                basename="receptionist-prescription")
+routes.register("receptionist/medications", ReceptionistMedicationAPIView,
+                basename="receptionist-medications")
+routes.register("labtech/test/cart", LabtechTestCartAPIView,
+                basename="labtech-test-cart")
+routes.register("labtech/tests", LabtechTestsAPIView,
+                basename="labtech-tests")
+routes.register("pharmacist/prescriptions", PharmacistPrescriptionCartAPIView,
+                basename="pharmacist-prescription")
+routes.register("pharmacist/medications", PharmacistMedicationAPIView,
+                basename="pharmacist-medications")
 
 
 # Records Routes
@@ -71,6 +93,12 @@ routes.register("receptionists", ReceptionistAPIView,
                 basename="receptionists")
 routes.register("patients", PatientAPIView,
                 basename="patients")
+routes.register("appointments", AppointmentsAPIView,
+                basename="appointments")
+routes.register("payments", PaymentAPIView,
+                basename="payment")
+routes.register("invoices", InvoiceAPIView,
+                basename="invoices")
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,

@@ -59,6 +59,9 @@ class Appointments(TrackingModel):
         verbose_name_plural = "Appointments"
         ordering = ("-appointment_date", "-appointment_time")
 
+    def Total_appointment_price(self):
+        return self.appointment_fee
+
 
 class Lab_test(TrackingModel):
     lab_test = models.CharField(_("test"), max_length=60,
@@ -93,7 +96,10 @@ class Test(TrackingModel):
         on_delete=models.DO_NOTHING, blank=True,
         null=True
     )
-    results = models.TextField(_("results"))
+    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING,
+                               blank=True, null=True)
+
+    results = models.TextField(_("results"), blank=True, null=True)
 
     def __str__(self):
         return f"{self.appointment.id}. {self.test.lab_test}"
@@ -112,7 +118,7 @@ class Tests(TrackingModel):
     tested = models.BooleanField(_("tested"), default=False)
     date_tested = models.DateTimeField(_("date tested"),
                                        null=True)
-    paid = models.BooleanField(_("dispenced"), default=False)
+    paid = models.BooleanField(_("paid"), default=False)
 
     def __str__(self):
         return self.appointment.patient.user.username
@@ -124,7 +130,7 @@ class Tests(TrackingModel):
         return total
 
     class Meta:
-        verbose_name_plural = "Patient Tests"
+        verbose_name_plural = "Tests Cart"
 
 
 class Medicine(TrackingModel):
@@ -156,11 +162,14 @@ class Medication(TrackingModel):
         _("duration"), max_length=57,
         blank=True, null=True
     )
-    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING)
+    doctor = models.ForeignKey(Doctor, on_delete=models.DO_NOTHING,
+                               blank=True, null=True)
     pharmacist = models.ForeignKey(
         Pharmacist, blank=True, null=True,
         on_delete=models.DO_NOTHING
     )
+    date_dispenced = models.DateTimeField(_("date dispenced"),
+                                          null=True)
     prescription_date = models.DateField(
         _("prescription date"), default=datetime.date.today)
     dispenced = models.BooleanField(_("dispenced"), default=False)
@@ -172,7 +181,7 @@ class Medication(TrackingModel):
         return self.quantity*self.price
 
     class Meta:
-        verbose_name_plural = "Medication"
+        verbose_name_plural = "Prescription"
 
 
 class Medication_Bag(TrackingModel):
@@ -184,11 +193,11 @@ class Medication_Bag(TrackingModel):
     def __str__(self):
         return self.appointment.patient.user.username
 
-    def Totap_Prescription_price(self):
+    def Total_Prescription_price(self):
         total = 0
         for med in self.medication.all():
             total += med.Total_medication_price()
         return total
 
     class Meta:
-        verbose_name_plural = "Medication Bag"
+        verbose_name_plural = "Prescription Cart"
