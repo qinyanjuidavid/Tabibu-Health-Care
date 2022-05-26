@@ -168,6 +168,8 @@ class Medication(TrackingModel):
         Pharmacist, blank=True, null=True,
         on_delete=models.DO_NOTHING
     )
+    date_dispenced = models.DateTimeField(_("date dispenced"),
+                                          null=True)
     prescription_date = models.DateField(
         _("prescription date"), default=datetime.date.today)
     dispenced = models.BooleanField(_("dispenced"), default=False)

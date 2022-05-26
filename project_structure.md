@@ -190,3 +190,38 @@
 - tax (10%)
   > Total Charges
   > VAT
+
+### Todo's
+
+- Avail all tests to the receptionist
+- Avail all Medications to the receptionist
+- Avail paid tests to the lab-tech
+- Avail the results of the tests to the doctor
+- Avail all paid Medications to the pharmacy
+- Generate Bills for Appointment, Medication and Tests
+- Avail the bills to the receptionist
+- Avail all tests to the management records\*
+- Avail all Medications to the Management records\*
+- Avail all bills to the management
+- Ensure Efficiency in the services
+- Deploy first version
+
+#### Ward Allortment
+
+- Brainstorm on ward allortment
+- Implement Feature
+
+#### Real-time Ambulance Booking
+
+- Brainstorm
+- Implement Feature
+
+#### Virtual Assistant(ML)
+
+- Brainstorm
+- Implement Feature
+
+#### Chat
+
+- Brainstorm
+- Implement Feature

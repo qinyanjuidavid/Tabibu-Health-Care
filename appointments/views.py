@@ -1,8 +1,9 @@
 from ast import Is
 from datetime import datetime
 import re
+from time import timezone
 
-from accounts.models import Departments, Doctor, Patient, Receptionist
+from accounts.models import Departments, Doctor, Labtech, Patient, Pharmacist, Receptionist
 from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
@@ -331,7 +332,7 @@ class DoctorTestAPIView(ModelViewSet):
 
 class TestRecommendation(ModelViewSet):
     serializer_class = testsSerializer
-    permission_classes = [IsAuthenticated, IsDoctor]
+    permission_classes = [IsAuthenticated, IsDoctor, IsAdministrator]
     http_method_names = ["get", "post", "delete"]
     """
     1. Creation of tests basing on the appointment,
@@ -412,7 +413,7 @@ class TestRecommendation(ModelViewSet):
     # The Doctor can remove a single test from the patients test cart
 
     @action(detail=True, methods=["get", "post"],
-            permission_classes=[IsAuthenticated, IsDoctor])
+            permission_classes=[IsAuthenticated, IsDoctor, IsAdministrator])
     def remove_single_test(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
@@ -420,7 +421,8 @@ class TestRecommendation(ModelViewSet):
         serializer = testSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializedTest = serializer.validated_data["test"]
-        serializedAppointment = serializer.validated_data["appointment"]
+        # serializedAppointment = serializer.validated_data["appointment"]
+        serializedAppointment = queryset.appointment
         if serializedAppointment.appointment_date >= datetime.now().date():
             recoTest, created = Test.objects.get_or_create(
                 test=serializedTest,
@@ -433,8 +435,6 @@ class TestRecommendation(ModelViewSet):
                     testsObj = testsObj[0]
                     if testsObj.test.filter(
                             Q(test__id=serializedTest.id)).exists():
-                        recoTest = Test.objects.get(appointment=serializedAppointment,
-                                                    test__id=serializedTest.id)
                         testsObj.test.remove(recoTest)
                         recoTest.delete()
                         return Response(
@@ -495,7 +495,7 @@ class DoctorMedicineAPIView(ModelViewSet):
 
 class MedicineRecommendation(ModelViewSet):
     serializer_class = MedicationBagSerializer
-    permission_classes = [IsAuthenticated, IsDoctor]
+    permission_classes = [IsAuthenticated, IsDoctor, IsAdministrator]
     http_method_names = ["get", "post", "delete"]
     """
     1. Creation of medicine recommendations basing on the appointment,
@@ -504,17 +504,17 @@ class MedicineRecommendation(ModelViewSet):
     4. Removal of all the tests from the patients medication cart
     """
 
-    def get_qeuryset(self):
+    def get_queryset(self):
         medicationCart = Medication_Bag.objects.all()
         return medicationCart
 
     def list(self, request, *args, **kwargs):
-        instance = self.get_qeuryset()
+        instance = self.get_queryset()
         serializer = self.get_serializer(instance, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None, *args, **kwargs):
-        queryset = self.get_qeuryset()
+        queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -556,7 +556,7 @@ class MedicineRecommendation(ModelViewSet):
                     medCartObj = Medication_Bag.objects.create(
                         appointment=serializedAppointment
                     )
-                    medCartObj.medicine.add(prescribedMed)
+                    medCartObj.medication.add(prescribedMed)
                     medCartObj.save()
                     return Response(
                         {"message": "Medicine was successfully added to the prescription cart."},
@@ -574,15 +574,16 @@ class MedicineRecommendation(ModelViewSet):
             )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['get', 'post'],
-            permission_classes=[IsAuthenticated, IsDoctor])
+    @action(detail=True, methods=['post'],
+            permission_classes=[IsAuthenticated, IsDoctor, IsAdministrator])
     def remove_single_medicine(self, request, pk=None, *args, **kwargs):
-        queryset = self.get_qeuryset()
+        queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = medicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializedMedicine = serializer.validated_data["medicine"]
-        serializedAppointment = serializer.validated_data["appointment"]
+        # serializedAppointment = serializer.validated_data["appointment"]
+        serializedAppointment = queryset.appointment
         if serializedAppointment.appointment_date >= datetime.now().date():
             recoMed, created = Medication.objects.get_or_create(
                 medicine=serializedMedicine,
@@ -594,21 +595,12 @@ class MedicineRecommendation(ModelViewSet):
                 if medCartObj.exists():
                     medCartObj = medCartObj[0]
                     if medCartObj.medication.filter(
-                        Q(medicine__id=serializedMedicine)
+                        Q(medicine__id=serializedMedicine.id)
                     ).exists():
-                        recoMed = Medication.objects.get(
-                            appointment=serializedAppointment,
-                            medicine__id=serializedMedicine.id)
                         medCartObj.medication.remove(recoMed)
                         recoMed.delete()
                         return Response(
                             {"message": "Medicine was successfully removed from the patient's prescription cart."},
-                            status=status.HTTP_200_OK
-                        )
-                    else:
-                        medCartObj.delete()
-                        return Response(
-                            {"message": "Prescritpion cart is empty."},
                             status=status.HTTP_200_OK
                         )
                 else:
@@ -626,16 +618,19 @@ class MedicineRecommendation(ModelViewSet):
                 {"message": "Medicine can't be removed from an outdated or expired appointment."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        return Response({"message": "Medicine not available in the patient's prescription cart."},
+                        status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=["post", "get"],
-            permission_classes=[IsAuthenticated, IsDoctor])
+    @action(detail=True, methods=["post", ],
+            permission_classes=[IsAuthenticated, IsDoctor, IsAdministrator])
     def decrease_medicine_quantity(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = medicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializedMedicine = serializer.validated_data["medicine"]
-        serializedAppointment = serializer.validated_data["appointment"]
+        # serializedAppointment = serializer.validated_data["appointment"]
+        serializedAppointment = queryset.appointment
         if serializedAppointment.appointment_date >= datetime.now().date():
             recoMed, created = Medication.objects.get_or_create(
                 medicine=serializedMedicine,
@@ -648,12 +643,9 @@ class MedicineRecommendation(ModelViewSet):
                 if medCartObj.exists():
                     medCartObj = medCartObj[0]
                     if medCartObj.medication.filter(
-                            Q(medicine__id=serializedMedicine)).exists():
-                        recoMed = Medication.objects.get(
-                            appointment=serializedAppointment,
-                            medicine__id=serializedMedicine.id)
+                            Q(medicine__id=serializedMedicine.id)).exists():
                         if recoMed.quantity > 1:
-                            recoMed -= 1
+                            recoMed.quantity -= 1
                             recoMed.save()
                             return Response(
                                 {"message": "The medicine quantity was reduced."},
@@ -666,12 +658,6 @@ class MedicineRecommendation(ModelViewSet):
                                 {"message": "The medicine was successfully removed"},
                                 status=status.HTTP_200_OK
                             )
-                    else:
-                        medCartObj.delete()
-                        return Response(
-                            {"message": "Prescription cart is empty."},
-                            status=status.HTTP_200_OK
-                        )
                 else:
                     return Response(
                         {"message": "Medicine does not exist in the prescription cart."},
@@ -687,6 +673,10 @@ class MedicineRecommendation(ModelViewSet):
                 {"message": "Medicine of an outdated or expired appointment can't be altered."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        return Response(
+            {"message": "The Medicine does not exist in the patient's prescription cart."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
@@ -701,8 +691,222 @@ class MedicineRecommendation(ModelViewSet):
 
 
 class ReceptionistTestCartAPIView(ModelViewSet):
-    pass
+    serializer_class = testsSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist]
+    http_method_names = ["get", "post"]
+
+    def get_queryset(self):
+        testsQuery = Tests.objects.all()
+        return testsQuery
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post", ],
+            permission_classes=[IsAuthenticated, IsReceptionist])
+    def test_detail(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        print(queryset.appointment)
+        serializer = testSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializedTest = serializer.validated_data["test"]
+        serializedAppointment = serializer.validated_data["appointment"]
+        testQR = get_object_or_404(
+            Test, appointment=queryset.appointment,
+            test=serializedTest)
+        print(queryset.appointment)
+        print(serializedTest)
+        Serialized_test = testSerializer(testQR, many=False)
+        return Response(Serialized_test.data, status=status.HTTP_200_OK)
+
+
+class ReceptionistTestsAPIView(ModelViewSet):
+    serializer_class = testSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist]
+    http_method_names = ["get", ]
+
+    def get_qeuryset(self):
+        testQuery = Test.objects.all()
+        return testQuery
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_qeuryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_qeuryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ReceptionistPrescriptionAPIView(ModelViewSet):
+    serializer_class = MedicationBagSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        prescriptionQuery = Medication_Bag.objects.all()
+        return prescriptionQuery
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ReceptionistMedicationAPIView(ModelViewSet):
+    serializer_class = medicationSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        medicationQuery = Medication.objects.all()
+        return medicationQuery
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_queryset(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LabtechTestCartAPIView(ModelViewSet):
-    pass
+    serializer_class = testsSerializer
+    permission_classes = [IsAuthenticated, IsLabtech]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        testCartObj = Tests.objects.filter(
+            Q(paid=True)
+        )
+        return testCartObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_queryset(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LabtechTestsAPIView(ModelViewSet):
+    serializer_class = testSerializer
+    permission_classes = [IsAuthenticated, IsLabtech]
+    http_method_names = ["get", "put"]
+
+    def get_queryset(self):
+        testsObj = Test.objects.filter(
+            Q(paid=True)
+        )
+        return testsObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_queryset(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        labtechQs = Labtech.objects.get(user=request.user)
+        serializedResults = serializer.validated_data["results"]
+        serializedTested = serializer.validated_data["tested"]
+        queryset.results = serializedResults
+        queryset.tested = serializedTested
+        queryset.lab_tech = labtechQs
+        queryset.date_tested = timezone.now()
+        queryset.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class PharmacistPrescriptionCartAPIView(ModelViewSet):
+    serializer_class = MedicationBagSerializer
+    permission_classes = [IsAuthenticated, IsPharmacist]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        prescriptionCartObj = Medication_Bag.objects.filter(
+            Q(paid=True)
+        )
+        return prescriptionCartObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_queryset(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PharmacistMedicationAPIView(ModelViewSet):
+    serializer_class = medicationSerializer
+    permission_classes = [IsAuthenticated, IsPharmacist]
+    http_method_names = ["get", "put"]
+
+    def get_queryset(self):
+        medicationObj = Medication.objects.filter(
+            Q(paid=True)
+        )
+        return medicationObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_queryset(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        queryset.pharmacist = Pharmacist.objects.get(user=request.user)
+        queryset.duration = serializer.validated_data["duration"]
+        queryset.notes = serializer.validated_data["notes"]
+        queryset.dispenced = serializer.validated_data["dispenced"]
+        queryset.date_dispenced = timezone.now()
+        queryset.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

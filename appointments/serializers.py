@@ -38,7 +38,7 @@ class testSerializer(serializers.ModelSerializer):
             "tested", "date_tested", "paid",
             "lab_tech", "results", "appointment"
         )
-        read_only_fields = ("id", "price",)
+        read_only_fields = ("id", "price", "paid")
     # Doctor --->appointment,test
     # labtech---> lab_tech,results,date_tested(Now),tested
     # Recepionist---> Bill(paid)
@@ -55,7 +55,7 @@ class testsSerializer(serializers.ModelSerializer):
             "tested", "date_tested",
             "paid"
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "paid")
 
         # Doctor---> test, appointment
         # labtech---> date_tested,tested
@@ -72,11 +72,12 @@ class medicationSerializer(serializers.ModelSerializer):
         model = Medication
         fields = (
             "id", "medicine", "appointment",
-            "price", "quantity", "notes",
+            "price", "quantity", "notes", "paid"
             "duration", "doctor", "pharmacist",
-            "dispenced"
+            "dispenced", "prescription_date",
+            "date_dispenced"
         )
-        read_only_fields = ("id", "price")
+        read_only_fields = ("id", "price", "paid")
 
 
 class MedicationBagSerializer(serializers.ModelSerializer):
@@ -89,4 +90,4 @@ class MedicationBagSerializer(serializers.ModelSerializer):
             "id", "medication", "appointment",
             "paid", "dispenced"
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "paid")
