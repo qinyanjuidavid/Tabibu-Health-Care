@@ -1,7 +1,7 @@
 import os
 from src.settings.local import *
 
-DEBUG = True
+DEBUG = False
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
