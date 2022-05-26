@@ -1,6 +1,7 @@
 import datetime
 from datetime import datetime as dt
 from this import d
+from time import timezone
 
 
 from accounts.models import (Administrator, Departments, Doctor, Patient, Pharmacist, Receptionist,
@@ -27,8 +28,10 @@ class Appointments(TrackingModel):
     appointment_date = models.DateField(
         _("appointment date"), default=datetime.date.today
     )
+    time = dt.now().time()
     appointment_time = models.TimeField(
-        _("appointment time"), default=dt.now().time()
+        _("appointment time"), default=time
+        # dt.now().time()
     )
 
     receptionist = models.ForeignKey(
