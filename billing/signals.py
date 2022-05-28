@@ -1,15 +1,92 @@
-# from django.db.models.signals import (
-#     post_save, m2m_changed, pre_delete,
-#     pre_save, post_delete)
-# from django.dispatch import receiver
-# from appointments.models import Appointments, Medication, Medication_Bag, Test, Tests
-# from billing.models import Payment, Invoice
-# from datetime import datetime
-# from django.utils import timezone
-# from django.db.models import Q
+from django.db.models.signals import (
+    post_save, m2m_changed, pre_delete,
+    pre_save, post_delete)
+from django.dispatch import receiver
+from appointments.models import Appointments, Medication, Medication_Bag, Test, Tests
+from billing.models import Payment, Invoice
+from datetime import datetime
+from django.utils import timezone
+from django.db.models import Q
 
 
-# # Appointment Payment
+@receiver(post_save, sender=Appointments)
+def createAppointmentPayment(sender, instance, created, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment=instance)
+    )
+    instance.appointment_fee = instance.department.consultation_fee
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+            item="Appointment",
+            appointment=instance,
+        ).exists():
+            paymentObj = Payment.objects.get(
+                appointment=instance,
+                item="Appointment"
+            )
+            print(instance.appointment_fee)
+            paymentObj.total_amount = instance.Total_appointment_price()
+            paymentObj.quantity = 1
+            paymentObj.balance = instance.appointment_fee
+            paymentObj.sub_unit = instance.appointment_fee
+            paymentObj.save()
+            invoiceQs.total_amount = invoiceQs.Invoice_Total()
+            invoiceQs.save()
+        else:
+            paymentQs, created = Payment.objects.get_or_create(
+                item="Appointment",
+                appointment=instance,
+                sub_unit=instance.appointment_fee,
+                type="Appointment",
+                total_amount=instance.Total_appointment_price(),
+                quantity=1
+            )
+            paymentQs.save()
+    else:
+        paymentQs, _ = Payment.objects.update_or_create(
+            item="Appointment",
+            appointment=instance,
+            sub_unit=instance.appointment_fee,
+            balance=instance.appointment_fee,
+            type="Appointment",
+            total_amount=instance.department.consultation_fee,
+            quantity=1
+        )
+        paymentQs.save()
+
+
+@receiver(post_save, sender=Payment)
+def createInvoicePayment(sender, instance, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment__id=instance.appointment.id)
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+            appointment__id=instance.appointment.id,
+            item=instance.item
+        ).exists():
+            invoiceQs.total_amount = invoiceQs.Invoice_Total()
+            invoiceQs.invoiced_date = datetime.now()
+            invoiceQs.save()
+        else:
+            invoiceQs.payment.add(instance)
+            invoiceQs.invoiced_date = datetime.now()
+            invoiceQs.total_amount = invoiceQs.Invoice_Total()
+            invoiceQs.save()
+    else:
+        i, _ = Invoice.objects.update_or_create(
+            total_amount=instance.total_amount,
+            appointment=instance.appointment,
+            invoiced_date=datetime.now()
+        )
+        i.payment.add(instance.id)
+        i.save()
+
+
+# =================================
+# # Appointment Payment ----->Progress
 # @receiver(post_save, sender=Appointments)
 # def createAppointmentPayment(sender, instance, created, **kwargs):
 #     invoiceQs = Invoice.objects.filter(

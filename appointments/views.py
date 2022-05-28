@@ -46,6 +46,7 @@ class PatientAppointmentsApiView(ModelViewSet):
         appointment_date = serializer.validated_data["appointment_date"]
         appointment_time = serializer.validated_data["appointment_time"]
         message = serializer.validated_data["your_message"]
+        print("llllllllllllllll")
         patientQuery = Patient.objects.get(user=request.user)
         if departmentObj.avail == True:
             if appointment_date >= datetime.now().date():
