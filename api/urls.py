@@ -13,7 +13,15 @@ from accounts.views import (
     VerifyEmail
 )
 
-from appointments.views import DoctorAppointmentApiView, DoctorMedicineAPIView, DoctorTestAPIView, LabtechTestCartAPIView, LabtechTestsAPIView, MedicineRecommendation, PatientAppointmentsApiView, PharmacistMedicationAPIView, PharmacistPrescriptionCartAPIView, ReceptionistApointmentApiView, ReceptionistMedicationAPIView, ReceptionistPrescriptionAPIView, ReceptionistTestCartAPIView, ReceptionistTestsAPIView, TestRecommendation
+from appointments.views import (
+    DoctorAppointmentApiView, DoctorMedicineAPIView,
+    DoctorTestAPIView, LabtechTestCartAPIView,
+    LabtechTestsAPIView, MedicineRecommendation,
+    PatientAppointmentsApiView, PatientTestAPIView, PatientTestsCartAPIView,
+    PharmacistMedicationAPIView, PharmacistPrescriptionCartAPIView,
+    ReceptionistApointmentApiView, ReceptionistMedicationAPIView,
+    ReceptionistPrescriptionAPIView, ReceptionistTestCartAPIView,
+    ReceptionistTestsAPIView, TestRecommendation)
 app_name = "api"
 routes = SimpleRouter()
 routes.register('login', LoginViewSet, basename='login')
@@ -68,6 +76,10 @@ routes.register("pharmacist/prescriptions", PharmacistPrescriptionCartAPIView,
                 basename="pharmacist-prescription")
 routes.register("pharmacist/medications", PharmacistMedicationAPIView,
                 basename="pharmacist-medications")
+routes.register("patient/tests/cart", PatientTestsCartAPIView,
+                basename="patientTests")
+routes.register("patient/test", PatientTestAPIView,
+                basename="patientTest")
 
 
 # Records Routes
