@@ -23,7 +23,7 @@ class UserSerializer(CountryFieldMixin,
     class Meta:
         model = User
         fields = ("id", "username", "full_name",
-                  "email", "phone",
+                  "email", "phone", "role", "is_active",
                   "timestamp")
         read_only_field = ("id", "email", "timestamp")
 
@@ -142,12 +142,15 @@ class SetNewPasswordSerializer(serializers.Serializer):
 class DepartmentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Departments
-        fields = ('id', 'department', 'room_number')
+        fields = ('id', 'department', 'room_number', "description",
+                  "added_by", "longitude", "latitude", "consultation_fee", "phone",
+                  "icon", "avail",
+                  )
         read_only_fields = ("id",)
 
 
 class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
@@ -155,59 +158,68 @@ class AdministratorProfileSerializer(CountryFieldMixin, serializers.ModelSeriali
         fields = ("id", "user", "bio", "id_no", "nationality",
                   "town", "estate", "gender", "department",
                   "marital_status", "date_of_birth", "job_id",
-                  "available"
+                  "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
 
 class PharmacistProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Pharmacist
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status", "date_of_birth",
-                  "job_id", "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
 
 class NurseProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Nurse
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status",
-                  "job_id", "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
 
 class DoctorProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Doctor
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status",
-                  "job_id", "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
 
 class LabtechProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
-    department = DepartmentsSerializer(read_only=True)
+    # department = DepartmentsSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Doctor
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "marital_status",
-                  "job_id", "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
@@ -219,8 +231,10 @@ class ReceptionistProfileSerializer(CountryFieldMixin, serializers.ModelSerializ
     class Meta:
         model = Receptionist
         fields = ("id", "user", "bio", "id_no", "nationality",
-                  "town", "estate", "gender", "department", "job_id",
-                  "available"
+                  "town", "estate", "gender", "department",
+                  "marital_status", "date_of_birth",
+                  "job_id", "available",
+                  "profile_picture"
                   )
         read_only_fields = ("id", "job_id")
 
@@ -232,9 +246,8 @@ class PatientProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
         model = Patient
         fields = ("id", "user", "bio", "id_no", "nationality", "town", "estate",
                   "gender", "marital_status", "date_of_birth", "blood_group", "weight",
-                  "height", "blood_pressure", "blood_sugar", "allergies"
+                  "height", "blood_pressure", "blood_sugar", "allergies",
+                  "profile_picture"
                   )
 
-        read_only_fields = ("id", "blood_group", "weight", "height",
-                            "blood_pressure", "blood_sugar", "allergies"
-                            )
+        read_only_fields = ("id",)

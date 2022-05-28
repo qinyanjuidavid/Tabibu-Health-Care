@@ -29,7 +29,12 @@ from rest_framework.exceptions import AuthenticationFailed
 from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User)
 from accounts.serializers import (
-    AdministratorProfileSerializer, DoctorProfileSerializer, LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer, PatientProfileSerializer, PatientRegisterSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserSerializer, RegisterSerializer
+    AdministratorProfileSerializer, DoctorProfileSerializer,
+    LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer,
+    PatientProfileSerializer, PatientRegisterSerializer,
+    PharmacistProfileSerializer, ReceptionistProfileSerializer,
+    ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer,
+    UserSerializer, RegisterSerializer
 )
 
 
@@ -140,8 +145,8 @@ def VerifyEmail(request):
         else:
             messages.info(request,
                           """Your Account has already been activated.
-                          You can now login and 
-                          place your order today.
+                          You can now login and
+                          book an appointment today.
                         """)
     except jwt.ExpiredSignatureError as identifier:
         messages.warning(request,
@@ -167,10 +172,12 @@ class RequestPasswordResetEmail(ModelViewSet):
             if user.is_active:
                 send_password_reset_email(user, request)
             return Response(
-                {"Success": "We have emailed you a link to reset your password"},
+                {"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."
+
+                 },
                 status=status.HTTP_200_OK
             )
-        return Response({"Success": "Password Reset Link was sent to your email."})
+        return Response({"Success": "If there’s an account associated with this email address, we’ll send you an email with reset instructions. If you don’t get an email, contact the Support team."})
 
 
 def PasswordResetTokenCheck(request, uidb64, token):
@@ -249,7 +256,7 @@ class AdministratorProfileAPIView(ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request, pk=None, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
 
@@ -281,7 +288,7 @@ class PharmacistProfileAPIView(ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request, pk=None, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
 
@@ -292,7 +299,12 @@ class PharmacistProfileAPIView(ModelViewSet):
             request.user, data=request.data["user"]
         )
         userSerializer.is_valid(raise_exception=True)
-        userSerializer.save()
+
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -324,7 +336,12 @@ class NurseProfileAPIView(ModelViewSet):
             request.user, data=request.data['user']
         )
         userSerializer.is_valid(raise_exception=True)
-        userSerializer.save()
+        userSerializer.is_valid(raise_exception=True)
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -350,13 +367,17 @@ class DoctorProfileAPIViewSet(ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data)
 
         serializer.is_valid(raise_exception=True)
+        serializer.is_valid()
         serializer.save()
-
         userSerializer = UserSerializer(
             request.user, data=request.data['user']
         )
         userSerializer.is_valid(raise_exception=True)
-        userSerializer.save()
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -387,7 +408,12 @@ class LabtechProfileAPIView(ModelViewSet):
         userSerializer = UserSerializer(
             request.user, data=request.data["user"]
         )
-        userSerializer.save()
+        userSerializer.is_valid(raise_exception=True)
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -419,7 +445,11 @@ class ReceptionistProfileAPIView(ModelViewSet):
             request.user, data=request.data["user"]
         )
         userSerializer.is_valid(raise_exception=True)
-        userSerializer.save()
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
@@ -428,7 +458,7 @@ class PatientProfileAPIView(ModelViewSet):
     permission_classes = [IsAuthenticated, IsPatient]
     http_method_names = ("put", "get")
 
-    def get_questset(self):
+    def get_queryset(self):
         user = self.request.user
         patientQuery = Patient.objects.filter(
             Q(user=user)
@@ -451,4 +481,9 @@ class PatientProfileAPIView(ModelViewSet):
             request.user, data=request.data["user"]
         )
         userSerializer.is_valid(raise_exception=True)
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
+        # userSerializer.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

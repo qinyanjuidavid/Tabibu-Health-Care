@@ -1,3 +1,4 @@
+from enum import unique
 from django.contrib.auth import validators
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.validators import UnicodeUsernameValidator
@@ -5,6 +6,10 @@ from django.db import models
 from django.utils.translation import gettext as _
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
+from django.core.validators import (
+    MaxLengthValidator,
+    MaxValueValidator,
+    MinLengthValidator)
 
 
 class TrackingModel(models.Model):
@@ -80,7 +85,8 @@ class User(AbstractBaseUser, TrackingModel):
         'unique': ('A user with that email already exists.'),
     })
     phone = PhoneNumberField(
-        _('phone number'), blank=True, null=True, max_length=27)
+        _('phone number'), unique=True,
+        blank=True, null=True, max_length=27)
     role = models.CharField(_('Role'), max_length=17, choices=Role_choices)
 
     is_active = models.BooleanField(_('active'), default=False)
@@ -130,7 +136,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
     bio = models.TextField(_('bio'), blank=True, null=True)
     profile_picture = models.ImageField(
-        upload_to='profile_pics', blank=True, null=True)
+        upload_to='profile_pics', default="default.png")
     id_no = models.CharField(
         _('National ID'), max_length=58, blank=True, null=True
     )
@@ -163,13 +169,41 @@ class Departments(TrackingModel):
     room_number = models.CharField(
         _("room number"), max_length=15, unique=True
     )
+    description = models.TextField(_("description"), blank=True, null=True)
     added_by = models.ForeignKey("Administrator", on_delete=models.CASCADE)
+    longitude = models.FloatField(_("longitude"), default=36.6)
+    latitude = models.FloatField(_("latitude"), default=3.4)
+    consultation_fee = models.FloatField(_("consultation fee"), default=0.00)
+    phone = PhoneNumberField(
+        _('phone number'), blank=True, null=True, max_length=27)
+    icon = models.ImageField(
+        upload_to='department_icons', blank=True, null=True)
+    avail = models.BooleanField(
+        _("available"), default=False,
+        help_text="Check if the department is essential to the patient.")
 
     def __str__(self):
         return self.department
 
     class Meta:
         verbose_name_plural = "Departments"
+
+
+class Departmental_Reviews(TrackingModel):
+    department = models.ForeignKey(
+        Departments, on_delete=models.CASCADE, related_name="reviews")
+    review = models.TextField(_("review"), blank=True, null=True)
+    rating = models.FloatField(_("rating"), default=0, validators=[
+        MaxValueValidator(5),
+        MaxLengthValidator(0)
+    ])
+    added_by = models.ForeignKey("Patient", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.review
+
+    class Meta:
+        verbose_name_plural = "Departmental Reviews"
 
 
 class StaffProfile(Profile):
