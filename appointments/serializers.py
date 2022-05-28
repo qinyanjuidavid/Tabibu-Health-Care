@@ -36,7 +36,8 @@ class testSerializer(serializers.ModelSerializer):
         fields = (
             "id", "test", "price",
             "tested", "date_tested", "paid",
-            "lab_tech", "results", "appointment"
+            "lab_tech", "results", "appointment",
+            "doctor"
         )
         read_only_fields = ("id", "price", "paid")
     # Doctor --->appointment,test

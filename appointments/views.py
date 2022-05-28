@@ -94,11 +94,11 @@ class PatientAppointmentsApiView(ModelViewSet):
         if department.avail == True:
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
-                    queryset.completed == True or
-                        queryset.appointment_date < datetime.now().date() or
-                        queryset.expired == True
-                        # queryset.paid == True
-                    ):
+                        queryset.completed == True or
+                            queryset.appointment_date < datetime.now().date() or
+                            queryset.expired == True
+                            # queryset.paid == True
+                        ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -126,8 +126,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-                    or queryset.completed == True
-                ):
+            or queryset.completed == True
+            ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -369,6 +369,7 @@ class TestRecommendation(ModelViewSet):
                 recoTest, created = Test.objects.get_or_create(
                     test=serializedTest,
                     appointment=serializedAppointment,
+                    doctor=Doctor.objects.get(user=request.user),
                     price=serializedTest.price
                 )
 
@@ -547,6 +548,7 @@ class MedicineRecommendation(ModelViewSet):
             if serializedMedicine.on_stock == True:
                 prescribedMed, created = Medication.objects.get_or_create(
                     medicine=serializedMedicine,
+                    doctor=Doctor.objects.get(user=request.user),
                     appointment=serializedAppointment,
                     price=serializedMedicine.price
                 )
@@ -734,34 +736,16 @@ class ReceptionistTestCartAPIView(ModelViewSet):
         testsQuery = Tests.objects.all()
         return testsQuery
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=["post", ],
-            permission_classes=[IsAuthenticated, IsReceptionist])
-    def test_detail(self, request, pk=None, *args, **kwargs):
-        queryset = self.get_queryset()
-        queryset = get_object_or_404(queryset, pk=pk)
-        print(queryset.appointment)
-        serializer = testSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializedTest = serializer.validated_data["test"]
-        serializedAppointment = serializer.validated_data["appointment"]
-        testQR = get_object_or_404(
-            Test, appointment=queryset.appointment,
-            test=serializedTest)
-        print(queryset.appointment)
-        print(serializedTest)
-        Serialized_test = testSerializer(testQR, many=False)
-        return Response(Serialized_test.data, status=status.HTTP_200_OK)
 
 
 class ReceptionistTestsAPIView(ModelViewSet):
@@ -773,12 +757,12 @@ class ReceptionistTestsAPIView(ModelViewSet):
         testQuery = Test.objects.all()
         return testQuery
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_qeuryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_qeuryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
@@ -794,12 +778,12 @@ class ReceptionistPrescriptionAPIView(ModelViewSet):
         prescriptionQuery = Medication_Bag.objects.all()
         return prescriptionQuery
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
@@ -815,12 +799,12 @@ class ReceptionistMedicationAPIView(ModelViewSet):
         medicationQuery = Medication.objects.all()
         return medicationQuery
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
-        serializer = self.get_queryset(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
@@ -838,12 +822,12 @@ class LabtechTestCartAPIView(ModelViewSet):
         )
         return testCartObj
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
-        serializer = self.get_queryset(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
@@ -861,29 +845,26 @@ class LabtechTestsAPIView(ModelViewSet):
         )
         return testsObj
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
-        serializer = self.get_queryset(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request, pk=None, *args, **kwargs):
+    def update(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
-        labtechQs = Labtech.objects.get(user=request.user)
-        serializedResults = serializer.validated_data["results"]
-        serializedTested = serializer.validated_data["tested"]
-        queryset.results = serializedResults
-        queryset.tested = serializedTested
-        queryset.lab_tech = labtechQs
-        queryset.date_tested = timezone.now()
+        queryset.results = serializer.validated_data["results"]
+        queryset.tested = True
+        queryset.lab_tech = Labtech.objects.get(user=request.user)
+        queryset.date_tested = datetime.now()
         queryset.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -899,12 +880,12 @@ class PharmacistPrescriptionCartAPIView(ModelViewSet):
         )
         return prescriptionCartObj
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
-        serializer = self.get_queryset(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
@@ -922,18 +903,18 @@ class PharmacistMedicationAPIView(ModelViewSet):
         )
         return medicationObj
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
-        serializer = self.get_queryset(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request, pk=None, *args, **kwargs):
+    def update(self, request, pk=None, *args, **kwargs):  # (Done)
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset, data=request.data)
@@ -942,10 +923,10 @@ class PharmacistMedicationAPIView(ModelViewSet):
         queryset.duration = serializer.validated_data["duration"]
         queryset.notes = serializer.validated_data["notes"]
         queryset.dispenced = serializer.validated_data["dispenced"]
-        queryset.date_dispenced = timezone.now()
+        queryset.date_dispenced = datetime.now()
         queryset.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# Deployment
-# Customers have a product
-# Added Whitenoise
+# Above Code has Fully been tested in postman
+# --> Patients Results
+# --> Billing
