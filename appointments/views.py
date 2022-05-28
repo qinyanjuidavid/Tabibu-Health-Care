@@ -94,11 +94,11 @@ class PatientAppointmentsApiView(ModelViewSet):
         if department.avail == True:
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
-                        queryset.completed == True or
-                            queryset.appointment_date < datetime.now().date() or
-                            queryset.expired == True
-                            # queryset.paid == True
-                        ):
+                    queryset.completed == True or
+                        queryset.appointment_date < datetime.now().date() or
+                        queryset.expired == True
+                        # queryset.paid == True
+                    ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -126,8 +126,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-            or queryset.completed == True
-            ):
+                    or queryset.completed == True
+                ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -927,6 +927,50 @@ class PharmacistMedicationAPIView(ModelViewSet):
         queryset.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# Above Code has Fully been tested in postman
-# --> Patients Results
-# --> Billing
+
+class PatientTestsCartAPIView(ModelViewSet):
+    serializer_class = testsSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        patientObj = Patient.objects.get(user=self.request.user)
+        testCartQuery = Tests.objects.filter(
+            Q(appointment__patient=patientObj)
+        )
+        return testCartQuery
+
+    def list(self, request, *args, **kwargs):  # (Done)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PatientTestAPIView(ModelViewSet):
+    serializer_class = testSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        patientObj = Patient.objects.get(user=self.request.user)
+        testObj = Test.objects.filter(
+            Q(appointment__patient=patientObj)
+        )
+        return testObj
+
+    def list(self, request, *args, **kwargs):  # (Done)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):  # (Done)
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
