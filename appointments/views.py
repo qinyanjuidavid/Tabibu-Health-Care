@@ -3,12 +3,13 @@ from datetime import datetime
 import re
 from time import timezone
 
-from accounts.models import Departments, Doctor, Labtech, Patient, Pharmacist, Receptionist
+from accounts.models import Departmental_Reviews, Departments, Doctor, Labtech, Patient, Pharmacist, Receptionist
 from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
+from accounts.serializers import DepartmentalReviewSerializer
 from records.serializers import MedicineSerializer, TestSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -96,10 +97,10 @@ class PatientAppointmentsApiView(ModelViewSet):
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
                         queryset.completed == True or
-                            queryset.appointment_date < datetime.now().date() or
-                            queryset.expired == True
-                            # queryset.paid == True
-                        ):
+                    queryset.appointment_date < datetime.now().date() or
+                    queryset.expired == True
+                    # queryset.paid == True
+                    ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -127,8 +128,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-            or queryset.completed == True
-            ):
+                or queryset.completed == True
+                ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -364,8 +365,15 @@ class TestRecommendation(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializedTest = serializer.validated_data["test"]
         serializedAppointment = serializer.validated_data["appointment"]
+
         if serializedAppointment.appointment_date >= datetime.now().date():
             if serializedTest.available == True:
+                print("pppppppp")
+                doctorQr = Doctor.objects.get(user=request.user)
+                print(doctorQr)
+                print(serializedTest)
+                print(serializedAppointment)
+                print(serializedTest.price)
 
                 recoTest, created = Test.objects.get_or_create(
                     test=serializedTest,
@@ -373,6 +381,10 @@ class TestRecommendation(ModelViewSet):
                     doctor=Doctor.objects.get(user=request.user),
                     price=serializedTest.price
                 )
+                print(doctorQr)
+                print(serializedTest)
+                print(serializedAppointment)
+                print(serializedTest.price)
 
                 testsObj = Tests.objects.filter(
                     Q(appointment=serializedAppointment)
@@ -975,3 +987,24 @@ class PatientTestAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DepartmentalReviewAPIView(ModelViewSet):
+    serializer_class = DepartmentalReviewSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ["get", "post", "put"]
+
+    def get_queryset(self):
+        patientQuery = Patient.objects.get(user=self.request.user)
+        reviewObj = Departmental_Reviews.objects.filter(
+            Q(added_by=patientQuery)
+        )
+        return reviewObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # post if there is no review
+    # put if there is a patients review in that department

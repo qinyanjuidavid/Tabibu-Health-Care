@@ -1,5 +1,5 @@
 from accounts.models import (
-    Administrator, Departments, Pharmacist,
+    Administrator, Departmental_Reviews, Departments, Pharmacist,
     User, Patient, Receptionist, Doctor, Nurse, Labtech
 )
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -146,6 +146,18 @@ class DepartmentsSerializer(serializers.ModelSerializer):
                   "added_by", "longitude", "latitude", "consultation_fee", "phone",
                   "icon", "avail",
                   )
+        read_only_fields = ("id",)
+
+
+class DepartmentalReviewSerializer(serializers.ModelSerializer):
+    department = DepartmentsSerializer(read_only=True)
+
+    class Meta:
+        model = Departmental_Reviews
+        fields = (
+            'id', 'department', 'review',
+            'rating', 'added_by'
+        )
         read_only_fields = ("id",)
 
 

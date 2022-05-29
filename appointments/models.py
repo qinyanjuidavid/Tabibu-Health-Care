@@ -16,6 +16,7 @@ class Appointments(TrackingModel):
     status_choices = (
         ("Cancelled", "Cancelled"),
         ("Completed", "Completed"),
+        ("In Progress", "In Progress"),
         ("Pending", "Pending"),
     )
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
@@ -92,7 +93,7 @@ class Test(TrackingModel):
     price = models.FloatField(_("price"),)
     tested = models.BooleanField(_("tested"), default=False)
     date_tested = models.DateTimeField(_("date tested"),
-                                       null=True)
+                                       null=True, blank=True)
     paid = models.BooleanField(_("paid"), default=False)
     lab_tech = models.ForeignKey(
         Labtech, related_name="lab_technicians",
