@@ -147,7 +147,7 @@ def paymentChanged(sender, instance, action, model, pk_set, *args, **kwargs):
             else:
                 print("Doesn't Exists")
                 invoiceQs.payment.add(qs)
-                invoiceQs.invoiced = datetime.now()
+                invoiceQs.invoiced = timezone.now()
                 invoiceQs.total_amount = invoiceQs.Invoice_Total()
                 invoiceQs.save()
         else:
@@ -171,6 +171,33 @@ def paymentChanged(sender, instance, action, model, pk_set, *args, **kwargs):
             invoiceQs.save()
 
 
+@receiver(post_save, sender=Appointments)
+def cancelAppointmentPayment(sender, instance, created, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment=instance)
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if instance.status == "Cancelled" and instance.paid is False:
+            if invoiceQs.payment.filter(
+                    Q(item="Appointment"),
+                    Q(appointment=instance), Q(paid=False)).exists():
+                appObj = Appointments.objects.filter(
+                    Q(id=instance.id),
+                    Q(paid=False)
+                )
+                appObj.update(status="Cancelled")
+                paymentQs = Payment.objects.filter(
+                    Q(appointment=instance)
+                )
+                for payment in paymentQs:
+                    invoiceQs.payment.remove(payment)
+                    payment.delete()
+                invoiceQs.delete()
+            else:
+                invoiceQs.delete()
+    else:
+        print("Doesn't Exists")
 # @receiver(post_save, sender=Test)
 # def createTestPayment(sender, instance, created, *args, **kwargs):
 #     invoiceQs = Invoice.objects.filter(
