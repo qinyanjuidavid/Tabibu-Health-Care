@@ -5,7 +5,7 @@ from django.urls import path, include
 from rest_framework.documentation import include_docs_urls
 
 API_TITLE = "Tabibu Health Care API"
-API_DESCRIPTION = "A sample API for learning DRF"
+API_DESCRIPTION = "A Hospital Management API"
 
 urlpatterns = [
     path('admin/', admin.site.urls),

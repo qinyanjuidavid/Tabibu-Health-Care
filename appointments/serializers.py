@@ -92,3 +92,4 @@ class MedicationBagSerializer(serializers.ModelSerializer):
             "paid", "dispenced"
         )
         read_only_fields = ("id", "paid")
+

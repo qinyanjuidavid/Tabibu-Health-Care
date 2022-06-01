@@ -198,6 +198,50 @@ def cancelAppointmentPayment(sender, instance, created, *args, **kwargs):
                 invoiceQs.delete()
     else:
         print("Doesn't Exists")
+
+
+@receiver(post_save, sender=Test)
+def createTestPayment(sender, instance, created, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment=instance.appointment),
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+            item=instance.test.lab_test,
+            appointment=instance.appointment,
+        ).exists():
+            paymentObj = Payment.objects.get(
+                appointment=instance.appointment,
+                item=instance.test.lab_test
+            )
+            paymentObj.total_amount = instance.Total_unit_Price()
+            paymentObj.quantity = 1
+            paymentObj.sub_unit = instance.price
+            paymentObj.type = "Lab Test"
+            paymentObj.save()
+            invoiceQs.total_amount = invoiceQs.Invoice_Total()
+            invoiceQs.save()
+        else:
+            paymentObj, created = Payment.objects.get_or_create(
+                item=instance.test.lab_test,
+                appointment=instance.appointment,
+                sub_unit=instance.price,
+                type="Lab Test",
+                total_amount=instance.Total_unit_Price()
+            )
+            paymentObj.quantity = 1
+            paymentObj.save()
+    else:
+        paymentObj, _ = Payment.objects.update_or_create(
+            item=instance.test.lab_test,
+            appointment=instance.appointment,
+            sub_unit=instance.test.price,
+            type="Lab Test",
+            total_amount=instance.Total_unit_Price()
+        )
+        paymentObj.quantity = 1
+        paymentObj.save()
 # @receiver(post_save, sender=Test)
 # def createTestPayment(sender, instance, created, *args, **kwargs):
 #     invoiceQs = Invoice.objects.filter(
