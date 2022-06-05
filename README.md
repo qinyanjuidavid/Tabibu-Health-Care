@@ -1,2 +1,3 @@
-# Tabibu_Health
-Tabibu Health Care API version 1
+# Tabibu Health Care
+### Installation
+- Create a virtual environment `python3 -m venv <env_name>`
