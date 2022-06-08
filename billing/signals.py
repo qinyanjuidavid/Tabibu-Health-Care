@@ -1,3 +1,4 @@
+from re import M
 from django.db.models.signals import (
     post_save, m2m_changed, pre_delete,
     pre_save, post_delete)
@@ -242,6 +243,284 @@ def createTestPayment(sender, instance, created, *args, **kwargs):
         )
         paymentObj.quantity = 1
         paymentObj.save()
+
+
+@receiver(post_delete, sender=Test)
+def removeTestPayment(sender, instance, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment=instance.appointment)
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+            Q(appointment=instance.appointment),
+            Q(item=instance.test.lab_test),
+            Q(paid=False)
+        ).exists():
+            paymentQs = Payment.objects.filter(
+                Q(appointment=instance.appointment),
+                Q(item=instance.test.lab_test)
+            )
+            for paymentQs in paymentQs:
+                invoiceQs.payment.remove(paymentQs)
+                paymentQs.delete()
+    else:
+        paymentQs = Payment.objects.filter(
+            Q(appointment=instance.appointment),
+            Q(item=instance.test.lab_test),
+            Q(paid=False)
+        )
+        for payment in paymentQs:
+            payment.delete()
+
+
+@receiver(post_save, sender=Appointments)
+def cancelAppointmentTests(sender, instance, created, *args, **kwargs):
+    testQs = Tests.objects.filter(
+        Q(appointment=instance),
+        Q(tested=False),
+        Q(paid=False)
+    )
+    if testQs.exists():
+        testQs = testQs[0]
+        if (instance.status == "Cancelled" and instance.paid is False):
+            if testQs.test.filter(
+                Q(appointment=instance),
+                Q(tested=False),
+                Q(paid=False)
+            ).exists():
+                testObj = Test.objects.filter(
+                    Q(appointment=instance), Q(paid=False),
+                    Q(tested=False)
+                )
+                for test in testObj:
+                    testQs.test.remove(test)
+                    test.delete()
+                testQs.delete()
+            else:
+                testQs.delete()
+
+
+@receiver(post_delete, sender=Appointments)
+def removeTestsOnAppointmentDelete(sender, instance, *args, **kwargs):
+    testQs = Tests.objects.filter(
+        Q(appointment=instance),
+        Q(tested=False),
+        Q(paid=False)
+    )
+    if testQs.exists():
+        testQs = testQs[0]
+        if testQs.test.filter(
+            Q(appointment=instance),
+            Q(tested=False),
+            Q(paid=False)
+        ).exists():
+            testObj = Test.objects.filter(
+                Q(appointment=instance), Q(tested=False),
+                Q(paid=False)
+            )
+            for test in testObj:
+                testQs.test.remove(testObj)
+                testObj.delete()
+            testQs.delete()
+        else:
+            testQs.delete()
+    else:
+        testObj = Test.objects.filter(
+            Q(appointment=instance), Q(paid=False),
+            Q(tested=False)
+        )
+        for test in testObj:
+            test.delete()
+
+
+@receiver(post_save, sender=Payment)
+def testPayment(sender, instance, created, *args, **kwargs):
+    testQs = Test.objects.filter(
+        Q(appointment=instance),
+        Q(test__lab_test=instance.item)
+    )
+    if testQs.exists():
+        testQs = testQs[0]
+        if Payment.objects.filter(
+            Q(item=testQs.test.lab_test),
+            Q(appointment=testQs.appointment)
+        ).exists():
+            paymentQuery = Payment.objects.filter(
+                Q(item=testQs.test.lab_test),
+                Q(appointment=testQs.appointment)
+            )
+            testQuery = Test.objects.filter(
+                Q(appointment=instance.appointment),
+                Q(test__lab_test=instance.item),
+                Q(price=instance.total_amount)
+            )
+            if (instance.type == "Lab Test" and
+                    instance.total_amount <= instance.paid_amount):
+                paymentQuery.update(paid=True, status="Completed")
+                testQuery.update(paid=True)
+            elif (instance.type == "Lab Test" and instance.paid_amount > 0 and
+                  instance.total_amount > instance.paid_amount):
+                paymentQuery.update(paid=False)
+
+
+def createMedicationPayment(sender, instance, created, *args, **kwargs):
+    invoiceObj = Invoice.objects.filter(
+        Q(appointment=instance.appointment)
+    )
+    if invoiceObj.exists():
+        invoiceObj = invoiceObj[0]
+        if invoiceObj.payment.filter(
+            Q(item=instance.appointment)
+        ).exists():
+            paymentObj = Payment.objects.get(
+                appointment=instance.appointment,
+                item=instance.medicine.drug)
+            paymentObj.total_amount = instance.Total_medication_price()
+            paymentObj.quantity = instance.quantity
+            paymentObj.sub_unit = instance.medicine.price
+            paymentObj.type = "Medicine"
+            paymentObj.save()
+            paymentObj.total_coats = invoiceObj.Invoive_Total()
+            invoiceObj.save()
+        else:
+            paymentObj, created = Payment.objects.get_or_create(
+                itam=instance.medicine.drug,
+                appointment=instance.appointment,
+                type="Medicine",
+                sub_unit=instance.medicine.price,
+                total_amount=instance.Total_medication_price()
+            )
+            paymentObj.quantity = instance.quantity
+            paymentObj.save()
+    else:
+        paymentObj, created = Payment.objects.get_or_create(
+            item=instance.medicine.drug,
+            appointment=instance.appointment,
+            sub_unit=instance.medicine.price,
+            type="Medicine",
+            total_amount=instance.Total_medictaion_price()
+        )
+        paymentObj.quantity = instance.quantity
+        paymentObj.save()
+
+
+@receiver(post_delete, sender=Medication)
+def removeMedicationPayment(sender, instance, *args, **kwargs):
+    invoiceQs = Invoice.objects.filter(
+        Q(appointment=instance.appointment),
+        Q(paid=False)
+    )
+    if invoiceQs.exists():
+        invoiceQs = invoiceQs[0]
+        if invoiceQs.payment.filter(
+            Q(item=instance.medicine.drug),
+            Q(appointment=instance.appointment),
+        ).exitsts():
+            paymentObj = Payment.objects.filter(
+                Q(appointment=instance.appointment),
+                Q(item=instance.medicine.drug)
+            )
+            for paymentObj in paymentObj:
+                invoiceQs.payment.remove(paymentObj)
+                paymentObj.delete()
+    else:
+        paymentObj = Payment.objects.filter(
+            Q(appointment=instance.appointment),
+            Q(item=instance.medicine.drug)
+        )
+        for paymentObj in paymentObj:
+            paymentObj.delete()
+
+
+@receiver(post_save, sender=Appointments)
+def cancelAppointmentMedication(sender, instance, created, *args, **kwargs):
+    prescriptionQs = Medication_Bag.objects.filter(
+        Q(appointment=instance),
+        Q(paid=False),
+        Q(dispenced=False)
+    )
+    if prescriptionQs.exists():
+        prescriptionQs = prescriptionQs[0]
+        if instance.status == "Cancelled" and instance.paid is False:
+            if prescriptionQs.medication.filter(
+                Q(appointment=instance), Q(dispenced=False),
+                Q(paid=False)
+            ).exists():
+                medicationObj = Medication.objects.filter(
+                    Q(appointment=instance), Q(dispenced=False),
+                    Q(paid=False)
+                )
+                for med in medicationObj:
+                    prescriptionQs.medication.remove(med)
+                    med.delete()
+                prescriptionQs.delete()
+            else:
+                prescriptionQs.delete()
+
+
+@receiver(post_delete, sender=Appointments)
+def removeMedication(sender, instance, *args, **kwargs):
+    prescriptionObj = Medication_Bag.objects.filter(
+        Q(appointment=instance), Q(paid=False),
+        Q(dispenced=False)
+    )
+    if prescriptionObj.exists():
+        prescriptionObj = prescriptionObj[0]
+        if prescriptionObj.medication.filter(
+            Q(appointment=instance), Q(dispenced=False),
+            Q(paid=False)
+        ).exists():
+            medicationQs = Medication.objects.filter(
+                Q(appointment=instance), Q(dispenced=False),
+                Q(paid=False)
+            )
+            for med in medicationQs:
+                prescriptionObj.medication.remove(med)
+                med.delete()
+            prescriptionObj.delete()
+        else:
+            medicationQs = Medication.objects.filter(
+                Q(appointment=instance), Q(dispenced=False),
+                Q(paid=False)
+            )
+            for med in medicationQs:
+                med.delete()
+
+
+@receiver(post_save, sender=Payment)
+def medicationPayment(sender, instance, created, *args, **kwargs):
+    medQs = Medication.objects.filter(
+        Q(appointment=instance.appointment),
+        Q(medicine__drug=instance.item)
+    )
+    if medQs.exists():
+        medQs = medQs[0]
+        if Payment.objects.filter(Q(item=medQs.medicine.drug),
+                                  Q(appointment=medQs.appointment)).exists():
+            paymentObj = Payment.objects.filter(
+                Q(item=medQs.medicine.drug),
+                Q(appointment=medQs.appointment)
+            )
+            medQuery = Medication.objects.filter(
+                Q(appointment=instance.appointment),
+                Q(medicine__drug=instance.item),
+                Q(price=instance.sub_unit)
+            )
+            if (instance.type == "Medicine" and instance.total_amount <= instance.paid_amount):
+                paymentObj.update(paid=True, status="Completed")
+                medQuery.update(paid=True)
+            elif (instance.type == "Medicine" and instance.paid_amount > 0 and
+                  instance.total_amount > instance.paid_amount):
+                paymentObj.update(paid=False, status="Partial")
+                medQuery.update(paid=False)
+            elif (instance.type == "Medicine" and instance.paid_amount == 0):
+                paymentObj.update(paid=False, status="Pending")
+                medQuery.update(paid=False)
+    else:
+        print("Medication does not exist.....")
+
+
 # @receiver(post_save, sender=Test)
 # def createTestPayment(sender, instance, created, *args, **kwargs):
 #     invoiceQs = Invoice.objects.filter(
