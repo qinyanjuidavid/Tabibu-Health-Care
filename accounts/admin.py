@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
-from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
+from accounts.models import (Administrator, Doctor, Driver, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User, Departments)
 admin.site.unregister(Group)
 
@@ -38,6 +38,7 @@ class PatientsAdmin(admin.ModelAdmin):
 @admin.register(Nurse)
 @admin.register(Administrator)
 @admin.register(Labtech)
+@admin.register(Driver)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ("get_username", "job_id",
                     "department", "get_active",
@@ -61,3 +62,5 @@ class DepartmentsAdmin(admin.ModelAdmin):
                     "room_number", "phone", "added_by",
                     "avail", "consultation_fee",
                     "created_at")
+
+#

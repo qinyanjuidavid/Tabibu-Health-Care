@@ -1,11 +1,11 @@
-from records.views import AdministratorAPIView, AppointmentsAPIView, DepartmentAPIView, DoctorAPIView, InvoiceAPIView, LabtechAPIView, MedicineAPIView, NurseAPIView, PatientAPIView, PaymentAPIView, PharmacistAPIView, ReceptionistAPIView, TestAPIView, UserAPIView
+from records.views import AdministratorAPIView, AppointmentsAPIView, DepartmentAPIView, DoctorAPIView, DriverAPIView, InvoiceAPIView, LabtechAPIView, MedicineAPIView, NurseAPIView, PatientAPIView, PaymentAPIView, PharmacistAPIView, ReceptionistAPIView, TestAPIView, UserAPIView
 from rest_framework.routers import SimpleRouter
 from django.views.generic import TemplateView
 from django.urls import path
 from rest_framework_simplejwt.views import (TokenRefreshView)
 
 from accounts.views import (
-    AdministratorProfileAPIView, DoctorProfileAPIViewSet,
+    AdministratorProfileAPIView, DoctorProfileAPIViewSet, DriverProfileAPIView,
     LabtechProfileAPIView, LoginViewSet, NurseProfileAPIView,
     PasswordResetTokenCheck, PatientProfileAPIView, PatientRegistrationViewSet,
     PharmacistProfileAPIView, ReceptionistProfileAPIView, RefreshViewSet,
@@ -14,8 +14,8 @@ from accounts.views import (
 )
 
 from appointments.views import (
-    DoctorAppointmentApiView, DoctorMedicineAPIView,
-    DoctorTestAPIView, LabtechTestCartAPIView,
+    AmbulanceAPIView, AmbulanceBookingAPIView, DoctorAppointmentApiView, DoctorMedicineAPIView,
+    DoctorTestAPIView, DriverAmbulanceTrips, LabtechTestCartAPIView,
     LabtechTestsAPIView, MedicineRecommendation,
     PatientAppointmentsApiView, PatientTestAPIView, PatientTestsCartAPIView,
     PharmacistMedicationAPIView, PharmacistPrescriptionCartAPIView,
@@ -47,6 +47,8 @@ routes.register('receptionist/profile', ReceptionistProfileAPIView,
                 basename="receptionist-profile")
 routes.register('patient/profile', PatientProfileAPIView,
                 basename="patient-profile")
+routes.register("driver/profile", DriverProfileAPIView,
+                basename="driver-profile")  # Untested
 # Appointment Routes
 routes.register('appointment', PatientAppointmentsApiView,
                 basename='appointment')
@@ -80,6 +82,12 @@ routes.register("patient/tests/cart", PatientTestsCartAPIView,
                 basename="patientTests")
 routes.register("patient/test", PatientTestAPIView,
                 basename="patientTest")
+routes.register("ambulance", AmbulanceAPIView,
+                basename="ambulance")  # Not tested
+routes.register("ambulance-booking", AmbulanceBookingAPIView,
+                basename="ambulance-booking")  # Not tested
+routes.register("driver-ambulance-trips", DriverAmbulanceTrips,
+                basename="driver-ambulance-trips")
 
 
 # Records Routes
@@ -111,6 +119,8 @@ routes.register("payments", PaymentAPIView,
                 basename="payment")
 routes.register("invoices", InvoiceAPIView,
                 basename="invoices")
+routes.register("drivers", DriverAPIView,
+                basename="drivers")  # Untested
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,

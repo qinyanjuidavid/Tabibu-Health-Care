@@ -1,13 +1,14 @@
 from datetime import datetime
+from webbrowser import get
 
-from accounts.models import (Administrator, Departments, Doctor, Labtech,
+from accounts.models import (Administrator, Departments, Doctor, Driver, Labtech,
                              Nurse, Patient, Pharmacist, Receptionist, User)
 from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
 from accounts.serializers import (AdministratorProfileSerializer,
                                   DepartmentsSerializer,
-                                  DoctorProfileSerializer,
+                                  DoctorProfileSerializer, DriverProfileSerializer,
                                   LabtechProfileSerializer,
                                   NurseProfileSerializer,
                                   PatientProfileSerializer,
@@ -474,6 +475,51 @@ class ReceptionistAPIView(ModelViewSet):
         return Response(
             {"message": "Account was successfully deactivated."},
             status=status.HTTP_204_NO_CONTENT)
+
+
+class DriverAPIView(ModelViewSet):
+    serializer_class = DriverProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdministrator]
+    http_method_name = ["get", "put", "delete"]
+
+    def get_queryset(self):
+        driverObj = Driver.objects.all()
+        return driverObj
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid()
+        userQuery = User.objects.get(id=queryset.user.id)
+        userSerializer = UserSerializer(
+            userQuery, data=request.data['user']
+        )
+        userSerializer.is_valid(raise_exception=True)
+        userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        userObj = User.objects.get(id=queryset.user.id)
+        userObj.is_active = False
+        userObj.save()
+        return Response(
+            {"message": "Account was successfully deactivated"},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class PatientAPIView(ModelViewSet):

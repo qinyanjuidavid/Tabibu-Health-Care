@@ -291,3 +291,25 @@ class Patient(Profile):
 
     def __str__(self):
         return self.user.username
+
+# Ambulance
+
+
+class Driver(StaffProfile):
+    longitude = models.FloatField(_("longitude"),
+                                  default=36.817223)
+    latitude = models.FloatField(_("latitude"),
+                                 default=-1.286389)
+    number_plate = models.CharField(_("Number plate"),
+                                    max_length=12,
+                                    blank=True, null=True)
+    verified = models.BooleanField(_("verified"),
+                                   default=False)
+
+    def __str__(self):
+        return self.user.username
+
+    class Meta:
+        ordering = ["-id"]
+        verbose_name = "Driver"
+        verbose_name_plural = "Drivers"
