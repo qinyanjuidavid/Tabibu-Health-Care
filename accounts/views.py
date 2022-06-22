@@ -1,5 +1,5 @@
 from accounts.permissions import (
-    IsAdministrator, IsDoctor, IsLabtech, IsNurse, IsPatient, IsPharmacist, IsReceptionist)
+    IsAdministrator, IsDoctor, IsDriver, IsLabtech, IsNurse, IsPatient, IsPharmacist, IsReceptionist)
 from accounts.send_mails import send_activation_mail, send_password_reset_email, send_random_password_mail
 import jwt
 from django.contrib import messages
@@ -26,10 +26,10 @@ from rest_framework_simplejwt.serializers import (
 from rest_framework_simplejwt.views import (
     TokenObtainPairView, TokenRefreshView)
 from rest_framework.exceptions import AuthenticationFailed
-from accounts.models import (Administrator, Doctor, Labtech, Nurse, Patient,
+from accounts.models import (Administrator, Doctor, Driver, Labtech, Nurse, Patient,
                              Pharmacist, Receptionist, User)
 from accounts.serializers import (
-    AdministratorProfileSerializer, DoctorProfileSerializer,
+    AdministratorProfileSerializer, DoctorProfileSerializer, DriverProfileSerializer,
     LabtechProfileSerializer, LoginSerializer, NurseProfileSerializer,
     PatientProfileSerializer, PatientRegisterSerializer,
     PharmacistProfileSerializer, ReceptionistProfileSerializer,
@@ -486,4 +486,38 @@ class PatientProfileAPIView(ModelViewSet):
         instance.user.phone = userSerializer.validated_data["phone"]
         instance.user.save()
         # userSerializer.save()
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+class DriverProfileAPIView(ModelViewSet):
+    serializer_class = DriverProfileSerializer
+    permission_classes = [IsAuthenticated, IsDriver]
+    http_method_names = ("get", "put")
+
+    def get_queryset(self):
+        user = self.request.user
+        driverQs = Driver.objects.filter(
+            Q(user=user)
+        )
+        return driverQs
+
+    def retrieve(self, request, *args, **kwargs):
+        queryset = self.get_object()
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        userSerializer = UserSerializer(
+            request.user, data=request.data["user"]
+        )
+        userSerializer.is_valid(raise_exception=True)
+        instance.user.username = userSerializer.validated_data["username"]
+        instance.user.full_name = userSerializer.validated_data["full_name"]
+        instance.user.phone = userSerializer.validated_data["phone"]
+        instance.user.save()
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

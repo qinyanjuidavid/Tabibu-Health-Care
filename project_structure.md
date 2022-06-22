@@ -213,8 +213,20 @@
 
 #### Real-time Ambulance Booking
 
-- Brainstorm
-- Implement Feature
+#### Driver
+
+- ambulance location(lng,lat)
+- number plate
+- driver(Phone number, name,)
+
+#### AmbulanceBooking
+
+- patient
+- price
+- reason(Comment)
+- pick up time
+- drop of time
+- lng & lat
 
 #### Virtual Assistant(ML)
 

@@ -263,3 +263,18 @@ class PatientProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
                   )
 
         read_only_fields = ("id",)
+
+
+class DriverProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Patient
+        fields = ("id", "user", "bio", "id_no", "nationality",
+                  "town", "estate", "gender", "department",
+                  "marital_status", "longitude", "latitude",
+                  "number_plate", "verified",
+                  "date_of_birth", "job_id", "available",
+                  "profile_picture")
+        read_only_fields = ("id", "job_id", "number_plate",
+                            "verified")

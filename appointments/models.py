@@ -205,3 +205,14 @@ class Medication_Bag(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Prescription Cart"
+
+
+class AmbulanceBooking(TrackingModel):
+    # patient
+    # pick up time
+    # drop of time
+    # longitude
+    # latitude
+    # reason
+    # price
+    pass
