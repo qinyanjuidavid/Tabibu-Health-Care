@@ -299,7 +299,7 @@ class Driver(StaffProfile):
     longitude = models.FloatField(_("longitude"),
                                   default=36.817223)
     latitude = models.FloatField(_("latitude"),
-                                 default=1.286389)
+                                 default=-1.286389)
     number_plate = models.CharField(_("Number plate"),
                                     max_length=12,
                                     blank=True, null=True)

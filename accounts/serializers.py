@@ -1,5 +1,5 @@
 from accounts.models import (
-    Administrator, Departmental_Reviews, Departments, Pharmacist,
+    Administrator, Departmental_Reviews, Departments, Driver, Pharmacist,
     User, Patient, Receptionist, Doctor, Nurse, Labtech
 )
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -269,7 +269,7 @@ class DriverProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
     class Meta:
-        model = Patient
+        model = Driver
         fields = ("id", "user", "bio", "id_no", "nationality",
                   "town", "estate", "gender", "department",
                   "marital_status", "longitude", "latitude",

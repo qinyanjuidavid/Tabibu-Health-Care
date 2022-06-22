@@ -3,13 +3,13 @@ from datetime import datetime
 import re
 from time import timezone
 
-from accounts.models import Departmental_Reviews, Departments, Doctor, Labtech, Patient, Pharmacist, Receptionist
-from accounts.permissions import (IsAdministrator, IsDoctor, IsLabtech,
+from accounts.models import Departmental_Reviews, Departments, Doctor, Driver, Labtech, Patient, Pharmacist, Receptionist
+from accounts.permissions import (IsAdministrator, IsDoctor, IsDriver, IsLabtech,
                                   IsNurse, IsPatient, IsPharmacist,
                                   IsReceptionist)
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
-from accounts.serializers import DepartmentalReviewSerializer
+from accounts.serializers import DepartmentalReviewSerializer, DriverProfileSerializer
 from records.serializers import MedicineSerializer, TestSerializer
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -18,8 +18,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 
-from appointments.models import Appointments, Lab_test, Medication, Medication_Bag, Medicine, Test, Tests
-from appointments.serializers import MedicationBagSerializer, medicationSerializer, patientAppointmentSerializer, testSerializer, testsSerializer
+from appointments.models import AmbulanceBooking, Appointments, Lab_test, Medication, Medication_Bag, Medicine, Test, Tests
+from appointments.serializers import AmbulanceBookingSerializer, MedicationBagSerializer, medicationSerializer, patientAppointmentSerializer, testSerializer, testsSerializer
 
 
 class PatientAppointmentsApiView(ModelViewSet):
@@ -97,10 +97,10 @@ class PatientAppointmentsApiView(ModelViewSet):
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
                         queryset.completed == True or
-                    queryset.appointment_date < datetime.now().date() or
-                    queryset.expired == True
-                    # queryset.paid == True
-                    ):
+                            queryset.appointment_date < datetime.now().date() or
+                            queryset.expired == True
+                            # queryset.paid == True
+                        ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -128,8 +128,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-                or queryset.completed == True
-                ):
+            or queryset.completed == True
+            ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -987,6 +987,162 @@ class PatientTestAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AmbulanceAPIView(ModelViewSet):
+    serializer_class = DriverProfileSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ["get", ]
+
+    def get_queryset(self):
+        driverObj = Driver.objects.filter(
+            Q(verified=True)
+        )
+        return driverObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AmbulanceBookingAPIView(ModelViewSet):
+    serializer_class = AmbulanceBookingSerializer
+    permission_classes = [IsAuthenticated, IsPatient]
+    http_method_names = ["get", "post", "put", "delete"]
+
+    def get_queryset(self):
+        user = self.request.user
+        patientQs = Patient.objects.get(user=user)
+        bookingQuery = AmbulanceBooking.objects.filter(
+            Q(patient=patientQs)
+        )
+        return bookingQuery
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, pk=None, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        patientObj = Patient.objects.get(user=request.user)
+        serializer.save(patient=patientObj)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        patientQs = Patient.objects.get(user=request.user)
+        serializer.save(patient=patientQs)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        queryset.cancelled = True
+        queryset.save()
+        return Response(
+            {"message": "Ambulance booking was successfully deleted."},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class DriverAmbulanceTrips(ModelViewSet):
+    serializer_class = AmbulanceBookingSerializer
+    permission_classes = [IsAuthenticated, IsDriver]
+    http_method_names = ["get", "put", ]
+
+    def get_queryset(self):
+        user = self.request.user
+        driverObj = Driver.objects.get(
+            user=user
+        )
+        bookedQs = AmbulanceBooking.objects.filter(
+            Q(driver=driverObj)
+        )
+        return bookedQs
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        driverObj = Driver.objects.get(user=request.user)
+        queryset.driver = driverObj
+        queryset.arrived = serializer.validated_data["arrived"]
+        queryset.confirmed = serializer.validated_data["confirmed"]
+        queryset.price = serializer.validated_date["price"]
+        queryset.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ReceptionistAmbulanceTrips(ModelViewSet):
+    serializer_class = AmbulanceBookingSerializer
+    permission_classes = [IsAuthenticated, IsReceptionist,
+                          IsAdministrator]
+    http_method_names = ["get", "put", "delete"]
+
+    def get_queryset(self):
+        bookedObj = AmbulanceBooking.objects.all()
+        return bookedObj
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_queryset(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if request.user.role == "Receptionist":
+            serializer.save(receptionist=Receptionist.objects.get(
+                user=request.user
+            ))
+        else:
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def destroy(self,request,pk=None,*args,**kwargs):
+        queryset=self.get_queryset()
+        queryset=get_object_or_404(queryset,pk=pk)
+        queryset.cancelled=True
+        return Response(
+            {"message":"Trip was successfully deleted"},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class DepartmentalReviewAPIView(ModelViewSet):

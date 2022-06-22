@@ -1,7 +1,7 @@
 from accounts.models import Pharmacist
 from rest_framework import serializers
 from accounts.serializers import DepartmentsSerializer, DoctorProfileSerializer, LabtechProfileSerializer, PatientProfileSerializer, PharmacistProfileSerializer, ReceptionistProfileSerializer
-from appointments.models import Appointments, Medication, Medication_Bag, Test, Tests
+from appointments.models import AmbulanceBooking, Appointments, Medication, Medication_Bag, Test, Tests
 from records.serializers import MedicineSerializer, TestSerializer
 
 
@@ -93,3 +93,13 @@ class MedicationBagSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "paid")
 
+
+class AmbulanceBookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AmbulanceBooking
+        fields = ("id", "patient", "driver", "arrived"
+                  "longitude", "latitude", "reason", "price",
+                  "pick_up_time", "drop_off_time", "confirmed",
+                  "cancelled", 'receptionist',
+                  "created_at", "updated_at")
+        read_only_fields = ("id",)

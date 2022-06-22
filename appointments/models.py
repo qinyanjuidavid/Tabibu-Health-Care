@@ -4,7 +4,7 @@ from this import d
 from time import timezone
 
 
-from accounts.models import (Administrator, Departments, Doctor, Patient, Pharmacist, Receptionist,
+from accounts.models import (Administrator, Departments, Doctor, Driver, Patient, Pharmacist, Receptionist,
                              Labtech, TrackingModel)
 from django.db import models
 from django.utils.translation import gettext as _
@@ -208,11 +208,35 @@ class Medication_Bag(TrackingModel):
 
 
 class AmbulanceBooking(TrackingModel):
-    # patient
-    # pick up time
-    # drop of time
-    # longitude
-    # latitude
-    # reason
-    # price
-    pass
+    patient = models.ForeignKey(Patient,
+                                on_delete=models.DO_NOTHING)
+    driver = models.ForeignKey(Driver,
+                               on_delete=models.DO_NOTHING)
+    receptionist = models.ForeignKey(Receptionist, blank=True, null=True,
+                                     on_delete=models.DO_NOTHING)
+    longitude = models.FloatField(_("longitude"),
+                                  default=36.817223)
+    latitude = models.FloatField(_("latitude"),
+                                 default=-1.286389)
+    reason = models.TextField(_("reason"), blank=True,
+                              null=True)
+    price = models.FloatField(_("price"), blank=True,
+                              null=True)
+    arrived = models.BooleanField(_("arrived"),
+                                  default=False)
+    confirmed = models.BooleanField(_("confirmed"),
+                                    default=False)
+    cancelled = models.BooleanField(_("cancelled"),
+                                    default=False)
+    pick_up_time = models.DateTimeField(_("pick up time"),
+                                        null=True)
+    drop_off_time = models.DateTimeField(_("drop off time"),
+                                         null=True)
+
+    def __str__(self):
+        return self.patient.user.username
+
+    class Meta:
+        ordering = ["id", ]
+        verbose_name = "Ambulance Booking"
+        verbose_name_plural = "Ambulance Booking"
