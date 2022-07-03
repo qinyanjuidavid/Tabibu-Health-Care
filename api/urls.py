@@ -14,7 +14,7 @@ from accounts.views import (
 )
 
 from appointments.views import (
-    AmbulanceAPIView, AmbulanceBookingAPIView, DoctorAppointmentApiView, DoctorMedicineAPIView,
+    AdminAmbulanceTrips, AmbulanceAPIView, AmbulanceBookingAPIView, DoctorAppointmentApiView, DoctorMedicineAPIView,
     DoctorTestAPIView, DriverAmbulanceTrips, LabtechTestCartAPIView,
     LabtechTestsAPIView, MedicineRecommendation,
     PatientAppointmentsApiView, PatientTestAPIView, PatientTestsCartAPIView,
@@ -87,8 +87,9 @@ routes.register("ambulance", AmbulanceAPIView,
 routes.register("ambulance-booking", AmbulanceBookingAPIView,
                 basename="ambulance-booking")  # Not tested
 routes.register("driver-ambulance-trips", DriverAmbulanceTrips,
-                basename="driver-ambulance-trips")
-
+                basename="driver-ambulance-trips")  # Not tested
+routes.register("admin-ambulance-trips", AdminAmbulanceTrips,
+                basename="admin-trips")  # Not Tested
 
 # Records Routes
 routes.register("tests", TestAPIView, basename="tests")
