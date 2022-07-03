@@ -97,10 +97,10 @@ class PatientAppointmentsApiView(ModelViewSet):
             if appointment_date >= datetime.now().date():
                 if (queryset.status == "Completed" or
                         queryset.completed == True or
-                            queryset.appointment_date < datetime.now().date() or
-                            queryset.expired == True
-                            # queryset.paid == True
-                        ):
+                    queryset.appointment_date < datetime.now().date() or
+                    queryset.expired == True
+                    # queryset.paid == True
+                    ):
                     return Response(
                         {"message": "Appointment already completed, paid or expired."},
                         status=status.HTTP_400_BAD_REQUEST
@@ -128,8 +128,8 @@ class PatientAppointmentsApiView(ModelViewSet):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
         if (queryset.status == "Completed" or queryset.paid == True
-            or queryset.completed == True
-            ):
+                or queryset.completed == True
+                ):
             return Response(
                 {"message": "Can't cancel a paid or completed appointment."},
             )
@@ -1102,7 +1102,7 @@ class DriverAmbulanceTrips(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ReceptionistAmbulanceTrips(ModelViewSet):
+class AdminAmbulanceTrips(ModelViewSet):
     serializer_class = AmbulanceBookingSerializer
     permission_classes = [IsAuthenticated, IsReceptionist,
                           IsAdministrator]
@@ -1135,12 +1135,13 @@ class ReceptionistAmbulanceTrips(ModelViewSet):
         else:
             serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    def destroy(self,request,pk=None,*args,**kwargs):
-        queryset=self.get_queryset()
-        queryset=get_object_or_404(queryset,pk=pk)
-        queryset.cancelled=True
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        queryset.cancelled = True
         return Response(
-            {"message":"Trip was successfully deleted"},
+            {"message": "Trip was successfully deleted"},
             status=status.HTTP_204_NO_CONTENT
         )
 

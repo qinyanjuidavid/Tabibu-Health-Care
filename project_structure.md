@@ -80,6 +80,7 @@
 ### Appointment
 
 - Appointment_ID (unique_id)
+- appointment_Type{-InPatient -OutPatient}
 - patient(FK)
 - appointment_fee(100)
 - paid (bool)
@@ -206,10 +207,39 @@
 - Ensure Efficiency in the services
 - Deploy first version
 
-#### Ward Allortment
+### Ward Allortment
 
-- Brainstorm on ward allortment
-- Implement Feature
+#### Ward
+
+- ward_name
+- gender
+
+#### Rooms
+
+- roomType
+- roomNumber
+- ward
+- added_by
+
+#### Space
+
+- bedNumber
+- room
+- price_per_night
+- added_by
+
+#### WardBooking
+
+- ward
+- appointment
+- date in(Admission Date)
+- Date Expected to leave(Discharge Date)
+- Actual Date left
+- total_amount
+- Nok(full names)
+- Relationship
+- Nok(phone)
+- onWaitingList
 
 #### Real-time Ambulance Booking
 
