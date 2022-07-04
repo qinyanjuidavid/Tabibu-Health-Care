@@ -155,3 +155,66 @@ class SlotAPIView(ModelViewSet):
     def get_queryset(self):
         slotQs = Slot.objects.all()
         return slotQs
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if request.user.role == "Administrator":
+            adminObj = Administrator.objects.get(user=request.user)
+            serializer.save(added_by=adminObj)
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action."},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if request.user.role == "Administrator":
+            adminObj = Administrator.objects.get(user=request.user)
+            serializer.save(added_by=adminObj)
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action."},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        if request.user.role == "Administrator":
+            queryset.delete()
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action."},
+                status=status.HTTP_200_OK
+            )
+        return Response(
+            {"message": "Hostel was successfully deleted."},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class WardBookingAPIView(ModelViewSet):
+    serializer_class = SlotSerializer
+    permission_classes = (
+        IsAuthenticated, IsAdministrator,
+        IsDoctor, IsNurse, IsReceptionist
+    )
+    http_method_names = ["get", "post", "put", "delete"]

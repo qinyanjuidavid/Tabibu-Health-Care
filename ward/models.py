@@ -68,6 +68,10 @@ class Slot(TrackingModel):
                                   max_length=57)
     room = models.ForeignKey(Rooms, on_delete=models.PROTECT)
     price_per_night = models.FloatField(default=0.00)
+    vacant = models.BooleanField(_("vacant"),
+                                 default=True)
+    reserved = models.BooleanField(_("reserved"),
+                                   default=False)
     added_by = models.ForeignKey(Administrator,
                                  on_delete=models.DO_NOTHING)
 
@@ -81,8 +85,13 @@ class Slot(TrackingModel):
 
 class WardBooking(TrackingModel):
     nok_relationship_choices = (
-        ("", "")
-    )  # Parent,Spouse,Friend,Relative,gurdian,sibling
+        ("Parent", "Parent"),
+        ("Gurdian", "Gurdian"),
+        ("Spouse", "Spouse"),
+        ("Friend", "Friend"),
+        ("Relative", "Relative")
+        ("Sibling", "Sibling")
+    )
     slot = models.CharField(
         _("slot"), max_length=27)
     appointment = models.ForeignKey(
