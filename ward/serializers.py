@@ -16,10 +16,12 @@ class WardSerializer(serializers.ModelSerializer):
 
 
 class RoomsSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedRelatedField(read_only=True)
+
     class Meta:
         model = Rooms
         fields = (
-            "id", "room_number", "room_type",
+            "id", "url", "room_number", "room_type",
             "ward", "added_by", "created_at",
             "updated_at")
         read_only_fields = ("id",)
