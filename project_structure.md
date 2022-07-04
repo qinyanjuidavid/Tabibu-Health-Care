@@ -230,7 +230,7 @@
 
 #### WardBooking
 
-- ward
+- slot
 - appointment
 - date in(Admission Date)
 - Date Expected to leave(Discharge Date)

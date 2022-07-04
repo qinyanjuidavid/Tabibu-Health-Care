@@ -10,10 +10,20 @@ class Ward(TrackingModel):
         ('Male', 'Male'),
         ('Female', 'Female'),
     )
+    ward_type_choices = (
+        ("Causality ward", "Causality ward"),
+        ("General ward", "General ward"),
+        ("Critical Care Unit", "Critical Care Unit"),
+        ("Intensive Care Unit", "Intensive Care Unit"),
+    )
     ward_name = models.CharField(
         _("ward name"), max_length=56,
         unique=True
     )
+    ward_type = models.CharField(
+        _("ward type"),
+        max_length=56,
+        choices=ward_type_choices)
     gender = models.CharField(
         _("gender"), max_length=57,
         choices=gender_choices
@@ -31,7 +41,9 @@ class Ward(TrackingModel):
 
 class Rooms(TrackingModel):
     room_type_choices = (
-        ("", "")
+        ("Single Room", "Single Room"),
+        ("Twin-Shared Room", "Twin-Shared Room"),
+        ("Multi-Bed Room", "Multi-Bed Room")
     )
     room_number = models.CharField(
         _("room number"), max_length=56
@@ -48,6 +60,7 @@ class Rooms(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Rooms"
+        ordering = ["-id"]
 
 
 class Slot(TrackingModel):
@@ -63,12 +76,13 @@ class Slot(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Slots"
+        ordering = ["-id"]
 
 
 class WardBooking(TrackingModel):
     nok_relationship_choices = (
         ("", "")
-    )
+    )  # Parent,Spouse,Friend,Relative,gurdian,sibling
     slot = models.CharField(
         _("slot"), max_length=27)
     appointment = models.ForeignKey(
@@ -104,3 +118,4 @@ class WardBooking(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Ward Booking"
+        ordering = ["-id"]
