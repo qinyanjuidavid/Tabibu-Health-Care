@@ -261,3 +261,19 @@ class BookedWardAPIView(ModelViewSet):
     def list(self, request, *args, **kwargs):
         instance = self.get_queryset()
         serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if (request.user.role == "Administrator" and
+                request.user.role == "Receptionist"):
+            serializer.save()
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action."},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

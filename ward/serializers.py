@@ -4,24 +4,24 @@ from ward.models import Rooms, Slot, Ward, WardBooking
 
 
 class WardSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedRelatedField(read_only=True)
+    # url = serializers.HyperlinkedRelatedField(read_only=True)
 
     class Meta:
         model = Ward
         fields = (
-            "id", "url", "ward_name", "gender",
+            "id", "ward_name", "gender",
             "added_by", "created_at",
             "updated_at")
         read_only_fields = ("id",)
 
 
 class RoomsSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedRelatedField(read_only=True)
+    # url = serializers.HyperlinkedRelatedField(read_only=True)
 
     class Meta:
         model = Rooms
         fields = (
-            "id", "url", "room_number", "room_type",
+            "id", "room_number", "room_type",
             "ward", "added_by", "created_at",
             "updated_at")
         read_only_fields = ("id",)

@@ -89,7 +89,7 @@ class WardBooking(TrackingModel):
         ("Gurdian", "Gurdian"),
         ("Spouse", "Spouse"),
         ("Friend", "Friend"),
-        ("Relative", "Relative")
+        ("Relative", "Relative"),
         ("Sibling", "Sibling")
     )
     slot = models.OneToOneField(
