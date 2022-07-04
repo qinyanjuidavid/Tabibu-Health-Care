@@ -22,6 +22,7 @@ from appointments.views import (
     ReceptionistApointmentApiView, ReceptionistMedicationAPIView,
     ReceptionistPrescriptionAPIView, ReceptionistTestCartAPIView,
     ReceptionistTestsAPIView, TestRecommendation)
+from ward.views import BookedWardAPIView, RoomAPIView, SlotAPIView, WardAPIView, WardBookingAPIView
 app_name = "api"
 routes = SimpleRouter()
 routes.register('login', LoginViewSet, basename='login')
@@ -122,6 +123,15 @@ routes.register("invoices", InvoiceAPIView,
                 basename="invoices")
 routes.register("drivers", DriverAPIView,
                 basename="drivers")  # Untested
+
+# Ward Routes
+routes.register("wards", WardAPIView, basename="ward")
+routes.register("room", RoomAPIView, basename="room")
+routes.register("slot", SlotAPIView, basename="slot")
+routes.register("ward-booking", WardBookingAPIView,
+                basename="ward-booking")
+routes.register("booked-ward", BookedWardAPIView,
+                basename="booked-ward")
 urlpatterns = [
     *routes.urls,
     path('activate/', VerifyEmail,

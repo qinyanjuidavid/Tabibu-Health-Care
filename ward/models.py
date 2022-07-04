@@ -10,10 +10,20 @@ class Ward(TrackingModel):
         ('Male', 'Male'),
         ('Female', 'Female'),
     )
+    ward_type_choices = (
+        ("Causality ward", "Causality ward"),
+        ("General ward", "General ward"),
+        ("Critical Care Unit", "Critical Care Unit"),
+        ("Intensive Care Unit", "Intensive Care Unit"),
+    )
     ward_name = models.CharField(
         _("ward name"), max_length=56,
         unique=True
     )
+    ward_type = models.CharField(
+        _("ward type"),
+        max_length=56,
+        choices=ward_type_choices)
     gender = models.CharField(
         _("gender"), max_length=57,
         choices=gender_choices
@@ -31,7 +41,9 @@ class Ward(TrackingModel):
 
 class Rooms(TrackingModel):
     room_type_choices = (
-        ("", "")
+        ("Single Room", "Single Room"),
+        ("Twin-Shared Room", "Twin-Shared Room"),
+        ("Multi-Bed Room", "Multi-Bed Room")
     )
     room_number = models.CharField(
         _("room number"), max_length=56
@@ -48,6 +60,7 @@ class Rooms(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Rooms"
+        ordering = ["-id"]
 
 
 class Slot(TrackingModel):
@@ -55,6 +68,10 @@ class Slot(TrackingModel):
                                   max_length=57)
     room = models.ForeignKey(Rooms, on_delete=models.PROTECT)
     price_per_night = models.FloatField(default=0.00)
+    vacant = models.BooleanField(_("vacant"),
+                                 default=True)
+    reserved = models.BooleanField(_("reserved"),
+                                   default=False)
     added_by = models.ForeignKey(Administrator,
                                  on_delete=models.DO_NOTHING)
 
@@ -63,14 +80,21 @@ class Slot(TrackingModel):
 
     class Meta:
         verbose_name_plural = "Slots"
+        ordering = ["-id"]
 
 
 class WardBooking(TrackingModel):
     nok_relationship_choices = (
-        ("", "")
+        ("Parent", "Parent"),
+        ("Gurdian", "Gurdian"),
+        ("Spouse", "Spouse"),
+        ("Friend", "Friend"),
+        ("Relative", "Relative"),
+        ("Sibling", "Sibling")
     )
-    slot = models.CharField(
-        _("slot"), max_length=27)
+    slot = models.OneToOneField(
+        Slot,
+        on_delete=models.DO_NOTHING)
     appointment = models.ForeignKey(
         Appointments,
         on_delete=models.CASCADE)
@@ -98,9 +122,12 @@ class WardBooking(TrackingModel):
         blank=True, null=True, max_length=27)
     on_waiting_list = models.BooleanField(
         _("on waiting list"), default=False)
+    cleared = models.BooleanField(_("cleared"),
+                                  default=False)
 
     def __str__(self):
         return self.appointment.patient.user.username
 
     class Meta:
         verbose_name_plural = "Ward Booking"
+        ordering = ["-id"]
