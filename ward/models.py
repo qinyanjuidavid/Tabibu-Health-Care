@@ -92,8 +92,9 @@ class WardBooking(TrackingModel):
         ("Relative", "Relative")
         ("Sibling", "Sibling")
     )
-    slot = models.CharField(
-        _("slot"), max_length=27)
+    slot = models.OneToOneField(
+        Slot,
+        on_delete=models.DO_NOTHING)
     appointment = models.ForeignKey(
         Appointments,
         on_delete=models.CASCADE)
@@ -121,6 +122,8 @@ class WardBooking(TrackingModel):
         blank=True, null=True, max_length=27)
     on_waiting_list = models.BooleanField(
         _("on waiting list"), default=False)
+    cleared = models.BooleanField(_("cleared"),
+                                  default=False)
 
     def __str__(self):
         return self.appointment.patient.user.username

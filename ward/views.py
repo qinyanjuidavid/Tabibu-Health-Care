@@ -6,9 +6,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from accounts.models import Administrator
 from accounts.permissions import IsAdministrator, IsDoctor, IsNurse, IsPatient, IsReceptionist
-from ward.models import Rooms, Slot, Ward
-
-from ward.serializers import RoomsSerializer, SlotSerializer, WardSerializer
+from ward.models import Rooms, Slot, Ward, WardBooking
+from django.db.models import Q
+from ward.serializers import RoomsSerializer, SlotSerializer, WardBookingSerializer, WardSerializer
+from rest_framework.decorators import action
 
 
 class WardAPIView(ModelViewSet):
@@ -218,3 +219,45 @@ class WardBookingAPIView(ModelViewSet):
         IsDoctor, IsNurse, IsReceptionist
     )
     http_method_names = ["get", "post", "put", "delete"]
+
+    def get_queryset(self):
+        slotQs = Slot.objects.filter(
+            Q(vacant=True),
+            Q(reserved=False)
+        )
+        return slotQs
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = get_object_or_404(queryset, pk=pk)
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_name="book-ward")
+    def book(self, request, pk=None, *args, **kwargs):
+        serializer = WardBookingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Ward booking
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BookedWardAPIView(ModelViewSet):
+    serializer_class = WardBookingSerializer
+    permission_classes = (
+        IsAuthenticated, IsAdministrator,
+        IsDoctor, IsNurse, IsReceptionist
+    )
+    http_method_names = ["get", "put", "post"]
+
+    def get_queryset(self):
+        bookedQs = WardBooking.objects.all()
+        return bookedQs
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
