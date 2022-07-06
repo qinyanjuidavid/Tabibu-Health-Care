@@ -60,7 +60,7 @@ class PaymentAPIView(ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         return Response(
-            {"message": "Invoice has been cancelled"},
+            {"message": "Payment has been cancelled"},
             status=status.HTTP_204_NO_CONTENT
         )
 
@@ -97,8 +97,23 @@ class InvoiceAPIView(ModelViewSet):
     def destroy(self, request, pk=None, *args, **kwargs):
         queryset = self.get_queryset()
         queryset = get_object_or_404(queryset, pk=pk)
-        queryset.status = "Cancelled"
-        queryset.save()
+        if (request.user.is_administrator or
+                request.user.is_receptionist):
+            if queryset.paid == True:
+                if request.user.is_administrator:
+                    queryset.status = "Cancelled"
+                    queryset.save()
+                else:
+                    return Response({"message": "Cannot cancel a paid payment"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                queryset.status = "Cancelled"
+                queryset.save()
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         return Response(
             {"message": "Invoice has been cancelled"},
             status=status.HTTP_204_NO_CONTENT
