@@ -33,7 +33,8 @@ class Payment(TrackingModel):
     payment_status = (
         ("Completed", "Completed"),
         ("Partial", "Partial"),
-        ("Pending", "Pending")
+        ("Pending", "Pending"),
+        ("Cancelled", "Cancelled"),
     )
     payment_method_choice = (
         ("Cash", "Cash"),
@@ -101,7 +102,8 @@ class Invoice(TrackingModel):
     payment_status = (
         ("Complete", "Complete"),
         ("Partial", "Partial"),
-        ("Pending", "Pending")
+        ("Pending", "Pending"),
+        ("Cancelled", "Cancelled"),
     )
     payment_method_choice = (
         ("Cash", "Cash"),
