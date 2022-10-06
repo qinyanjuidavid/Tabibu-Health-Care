@@ -158,7 +158,7 @@ if DEBUG == False:
     SECURE_FRAME_DENY = True
 
     # Whitenoise storage
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 else:
     DATABASES = {
         "default": {
