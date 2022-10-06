@@ -13,7 +13,7 @@ from rest_framework.viewsets import ModelViewSet
 class PaymentAPIView(ModelViewSet):
     serializer_class = PatientAPIView
     permission_classes = (IsAuthenticated, IsAdministrator,
-                          IsReceptionist, IsPatient)
+                          IsReceptionist)
     http_method_names = ["get", "put", "delete"]
 
     def get_queryset(self):
@@ -36,7 +36,14 @@ class PaymentAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if (request.user.is_administrator or
+                request.user.is_receptionist):
+            serializer.save()
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk=None, *args, **kwargs):
@@ -91,7 +98,14 @@ class InvoiceAPIView(ModelViewSet):
         queryset = get_object_or_404(queryset, pk=pk)
         serializer = self.get_serializer(queryset, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if (request.user.is_administrator or
+                request.user.is_receptionist):
+            serializer.save()
+        else:
+            return Response(
+                {"message": "You are not authorized to perform this action"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk=None, *args, **kwargs):
